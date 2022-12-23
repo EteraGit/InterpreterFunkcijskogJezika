@@ -1,0 +1,24 @@
+add(x,0):=x
+add(x,y+1):=sc(add(x,y))
+(x+y) ::= add(x,y)   ; nice to have
+
+
+f(x,y):=add(sc(sc(x)),y)   ; opcionalno: +, *,...
+
+[Positive](0):=0
+[Positive](x+1):=1
+
+Greater(x,y):<=>Positive(sub(x,y))  # ići u: [Greater](x,y):=[Positive](sub(x,y))
+div(x,y):=pd((mu z)Greater(mul(z,y),x))
+
+mod(x,y):=sub(x,mul(y,div(x,y)))   # (x-(y*(x//y)))
+
+Divides(x,y):<=>Equal(mod(x,y),Z(x))  # moze i Equal(mod(x,y),0)
+Prime(p):<=>Equal((#d<=p)Divides(d,p), 2)
+
+factorial(0):=1
+factorial(n+1):=mul(sc(n),factorial(n))
+
+nextprime(p):=(mu q<=sc(factorial(p)))(Prime(q) & Greater(q,p))  # eventualno AND(...)
+
+# Ograničeno: (keyword x <(=) izraz)relacija
