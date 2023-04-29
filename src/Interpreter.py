@@ -1,16 +1,10 @@
 from vepar import *
 from AST import *
+from Token import *
 import pathlib
+import sys
 
-class T(TipoviTokena):
-    FUNCTION_EQUALS, RELATION_EQUALS, AND, OR, LEQ, MU, NEWLINE = ':=', ':<=>', '&&', '||', '<=', 'mu', '\n'
-    CARD, OOTV, OZATV, VOTV, VZATV, UGOTV, UGZATV, JEDNAKO, TOČKAZ, PLUS, MINUS, PUTA, DIJELJENO, ZAREZ, MANJE = '#(){}[]=;+-*/,<'
-
-    class BROJ(Token):
-        def vrijednost(self, mem, unutar): return int(self.sadržaj)
-
-    class IME(Token):
-        def vrijednost(self, mem, unutar): return mem[self]
+sys.setrecursionlimit(10000)
 
 @lexer
 def Lexer(lex):
@@ -24,6 +18,12 @@ def Lexer(lex):
                 lex.pročitaj_do('\n')
                 lex.zanemari()
                 yield lex.token(T.NEWLINE)
+            elif lex >= '*':
+                while 1:
+                    lex.pročitaj_do('*', više_redova=True)
+                    if lex >= '/':
+                        lex.zanemari()
+                        break
         elif znak == '&':
             lex >> '&'
             yield lex.token(T.AND)
@@ -101,131 +101,127 @@ PARENTHESIZED_EXPRESSION -> ( EXPRESSION )
 class P(Parser):
 
     def program(self):
-        self.funkcije = Memorija(redefinicija=False)
+        self.funkcije = Memorija(redefinicija=True)
         self.relacije = Memorija(redefinicija=False)
         self.karakteristične_funkcije = Memorija(redefinicija=False)
         self.define_known_functions()
         commands = []
         while not self > KRAJ:
             commands.append(self.command())
-        return Program(commands)
+        return Program(commands, self.funkcije, self.relacije, self.karakteristične_funkcije)
 
     def define_known_functions(self):
-        self.funkcije['Z'] = Function('Z', ['x'], Integer(0))
-        self.funkcije['I'] = Function('I', ['x'], Variable('x'))
-        self.funkcije['Sc'] = Function('Sc', ['x'], Add(Variable('x'), Integer(1)))
+        self.funkcije['Z'] = Function(Token(T.IME, 'Z'), [Token(T.IME, 'x')], Integer(0))
+        self.funkcije['Sc'] = Function(Token(T.IME, 'Sc'), [Token(T.IME, 'x')], Add([Variable('x'), Integer(1)]))
+        self.funkcije['I'] = Function(Token(T.IME, 'I'), [Token(T.IME, 'x')], Variable('x'))
         return nenavedeno
-    
+
     def command(self):
         if self > T.IME:
-            return self.function()
-        elif self > T.VOTV:
-            return self.relation()
+            return self.function_definition()
         elif self > T.UGOTV:
-            return self.characteristic_function()
-        elif self >= T.NEWLINE:
+            return self.characteristic_function_definition()
+        elif self > T.VOTV:
+            return self.relation_definition()
+        else:
+            self >> T.NEWLINE
             return nenavedeno
-    
-    def function(self):
-        self.ime_funkcije = self >> T.IME
-        self.parametri_funkcije = self.parameters()
-        self >> T.FUNCTION_EQUALS
-        tijelo_funkcije = self.expression()
-        self >> T.NEWLINE
-        if self.ime_funkcije not in self.funkcije:
-            self.funkcije[self.ime_funkcije] = Function(self.ime_funkcije, self.parametri_funkcije, tijelo_funkcije)
-
-        return Function(self.ime_funkcije, self.parametri_funkcije, tijelo_funkcije)
-    
-    def relation(self):
-        self >> T.VOTV
-        self.ime_relacije = self >> T.IME
-        self >> T.VZATV
-        self.parametri_relacije = self.parameters()
-        self >> T.RELATION_EQUALS
-        tijelo_relacije = self.expression()
-        self >> T.NEWLINE
-        if self.ime_relacije not in self.relacije:
-            self.relacije[self.ime_relacije] = Relation(self.ime_relacije, self.parametri_relacije, tijelo_relacije)
-
-        return Relation(self.ime_relacije, self.parametri_relacije, tijelo_relacije)
-    
-    def characteristic_function(self):
-        self >> T.UGOTV
-        self.ime_relacije = self >> T.IME
-        self >> T.UGZATV
-        self.parametri_relacije = self.parameters()
-        self >> T.FUNCTION_EQUALS
-        tijelo_karakteristične_funkcije = self.expression()
-        self >> T.NEWLINE
-        if self.ime_relacije not in self.relacije:
-            self.relacije[self.ime_relacije] = CharacteristicFunction(self.ime_relacije, self.parametri_relacije, tijelo_karakteristične_funkcije)
         
-        return CharacteristicFunction(self.ime_relacije, self.parametri_relacije, tijelo_karakteristične_funkcije)
-
-    #def print(self):
+    def function_definition(self):
+        ime = self >> T.IME
+        parametri = self.parameters()
         if self >= T.NEWLINE:
-            return Print(nenavedeno, nenavedeno)
-        
-        ime_izraza = self >> T.IME
-        parametri_izraza = self.expressions()
+            return Call(ime, parametri)
+        self >> T.FUNCTION_EQUALS
+        izraz = self.expression()
         self >> T.NEWLINE
-        
-        return Print(ime_izraza, parametri_izraza)
+
+        function = Function(ime, parametri, izraz)
+        if parametri[-1].sadržaj == '0':
+            defaultIme = Token(T.IME, ime.sadržaj + defaultString)
+            if defaultIme not in self.funkcije:
+                function = Function(defaultIme, parametri, izraz)
+                self.funkcije[defaultIme] = function
+                return function
+        self.funkcije[ime] = function
+        return function
     
     def parameters(self):
         self >> T.OOTV
         if self >= T.OZATV:
             return []
-        param = [self.expression()]
+        parametri = [self.parameter()]
         while self >= T.ZAREZ:
-            param.append(self.expression())
+            parametri.append(self.parameter())
         self >> T.OZATV
-        return param
-    
+        return parametri
+
+    def parameter(self):
+        if ime := self >= T.IME:
+            if self > T.ZAREZ or self > T.OZATV:
+                return ime
+            elif self > T.OOTV:
+                unutarnji = self.parameters()
+                return Call(ime, unutarnji)
+            else:
+                self >> T.PLUS
+                broj = self >> T.BROJ
+                if int(broj.sadržaj) != 1:
+                    raise SintaksnaGreška('Zadnji argument funkcijskog parametra mora biti oblika (varijabla + 1)')
+                return Token(T.IME, ime.sadržaj + '+1')
+        else:
+            return self >> T.BROJ
+        
     def expression(self):
-        terms = [self.term()]
+        return self.term()
+    """
+        izraz = [self.term()]
         while self >= T.PLUS:
-            terms.append(self.term())
-        return Expression(terms)
-    
-    def parenthesized_expression(self):
-        self >> T.OOTV
-        expression = self.expression()
-        self >> T.OZATV
-        return expression
+            izraz.append(self.term())
+        return Add(izraz)
+    """
     
     def term(self):
-        if self > T.BROJ:
-            return Integer(self >> T.BROJ)
-        elif self > T.IME:
-            return self.function_call_or_name(self >> T.IME)
-        elif self > T.VOTV:
+        if self >= T.OOTV:
+            izraz = self.expression()
+            self >> T.OZATV
+            return izraz
+        elif ime := self >= T.IME:
+            return self.function_call_or_name(ime)
+        elif broj := self >= T.BROJ:
+            return Integer(int(broj.sadržaj))
+        elif self >= T.MU:
+            return self.minimize()
+        elif self >= T.VOTV:
             return self.relation_call()
-        elif self > T.OOTV:
-            return self.parenthesized_expression()
         else:
-            raise self.greška()
-
+            return nenavedeno
+        
     def function_call_or_name(self, ime):
-        if ime in self.funkcije:
-            funkcija = self.funkcije[ime]
-            return Poziv(funkcija, self.parameters())
-        elif ime == self.ime_funkcije:
-            return Poziv(nenavedeno, self.parameters())
+        if self > T.OOTV:
+            argumenti = self.arguments()
+            return Call(ime, argumenti)
         else:
-            return ime
+            return Variable(ime.sadržaj)
     
-    def relation_call(self):
-        self >> T.VOTV
-        ime_relacije = self >> T.IME
-        self >> T.VZATV
-        parametri_relacije = self.parameters()
-        return Poziv(self.relacije[ime_relacije], parametri_relacije)
+    def arguments(self):
+        self >> T.OOTV
+        if self >= T.OZATV:
+            return []
+        argumenti = [self.expression()]
+        while self >= T.ZAREZ:
+            argumenti.append(self.expression())
+        self >> T.OZATV
+        return argumenti
 
+            
 s1 = pathlib.Path('Inputs/SampleInput.txt').read_text(encoding='utf-8')
 
 Lexer(s1)
 
 kôd = P(s1)
+
+prikaz(kôd)
+
+kôd.izvrši()
 

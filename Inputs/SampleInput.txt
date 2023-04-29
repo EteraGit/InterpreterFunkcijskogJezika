@@ -2,13 +2,18 @@ add(x,0):=x
 add(x,y+1):=Sc(add(x,y))
 // zakomentirano za sad (x+y) ::= add(x,y)   // nice to have
 
+f(x,y):=add(Sc(Sc(x)),y)   // opcionalno: +, *,...
+
 pd(0):=0
 pd(y+1):=y
 
 sub(x,0):=x
 sub(x,y+1):=pd(sub(x,y))
 
-f(x,y):=add(Sc(Sc(x)),y)   // opcionalno: +, *,...
+mul(x,0):=0
+mul(x,y+1):=add(x,mul(x,y))
+
+/*
 
 [Positive](0):=0
 [Positive](x+1):=1
@@ -22,8 +27,16 @@ mod(x,y):=sub(x,mul(y,div(x,y)))   // (x-(y*(x//y)))
 {Prime}(p):<=>{Equal}((#d<=p){Divides}(d,p), 2)
 
 factorial(0):=1
-factorial(n+1):=mul(sc(n),factorial(n))
+factorial(n+1):=mul(Sc(n),factorial(n))
 
-nextprime(p):=(mu q<=sc(factorial(p)))({Prime}(q) && {Greater}(q,p))  // eventualno AND(...)
+nextprime(p):=(mu q<=Sc(factorial(p)))({Prime}(q) && {Greater}(q,p))  // eventualno AND(...)
 
 // Ograničeno: (keyword x <(=) izraz)relacija
+
+*/
+
+mul(30,20)
+
+add(add(1,1), add(1,1))
+
+f(1, 1)
