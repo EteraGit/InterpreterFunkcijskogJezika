@@ -41,6 +41,7 @@ class Function(AST):
     def pozovi(self, argumenti, funkcije):
         pomocni = self.parametri.copy()
         if self.parametri[-1].sadržaj[-2:] == '+1':
+            argumenti[-1] -= 1
             pomocni[-1] = Token(T.IME, self.parametri[-1].sadržaj[:-2])
         lokalna = Memorija(zip(pomocni, argumenti))
         try:
@@ -66,8 +67,8 @@ class Variable(AST):
         return memorija[self.ime]
     
     def izvrši(self, memorija, funkcije):
-        if memorija.__len__() != 0 and memorija[nađiZadnju(memorija)] > 0:
-            memorija[nađiZadnju(memorija)] -= 1
+        #if memorija.__len__() != 0 and memorija[nađiZadnju(memorija)] > 0:
+            #memorija[nađiZadnju(memorija)] -= 1
         return self.vrijednost(memorija, funkcije)
     
 class Integer(AST):
@@ -89,25 +90,135 @@ class Call(AST):
     def vrijednost(self, memorija, funkcije):
         if memorija.__len__() != 0 and memorija[nađiZadnju(memorija)] <= 0 and self.ime.sadržaj + defaultString in funkcije.podaci.keys():
             defaultIme = Token(T.IME, self.ime.sadržaj + defaultString)
-            return funkcije[defaultIme].izraz.izvrši(memorija, funkcije)
-        elif len(self.parametri) > 0:
+            povratak = funkcije[defaultIme].izraz.izvrši(memorija, funkcije)
+            return povratak
+        if len(self.parametri) > 0:
             vrijednosti, pomocne = [], []
             for i,parametar in enumerate(self.parametri):
                 pomocne.append(funkcije[self.ime].parametri[i])
                 vrijednosti.append(parametar.vrijednost(memorija, funkcije))
             if pomocne[-1].sadržaj[-2:] == '+1':
                 pomocne[-1] = Token(T.IME, pomocne[-1].sadržaj[:-2])
-            pomocna = Memorija(zip(pomocne, vrijednosti))
-            return funkcije[self.ime].izraz.izvrši(pomocna, funkcije)
-        return funkcije[self.ime].izraz.izvrši(memorija, funkcije)
+            povratak = funkcije[self.ime].pozovi(vrijednosti, funkcije)
+            return povratak
+        vrijednosti = []
+        for parametar in self.parametri:
+            vrijednosti.append(parametar.vrijednost(memorija, funkcije))
+        povratak = funkcije[self.ime].pozovi(vrijednosti, funkcije)
+        return povratak
     
     def izvrši(self, memorija, funkcije):
-        if memorija.__len__() != 0 and memorija[nađiZadnju(memorija)] > 0:
-            memorija[nađiZadnju(memorija)] -= 1
         parametri = [parametar.vrijednost(memorija, funkcije) for parametar in self.parametri]
-        if parametri[-1] == 0 and defaultString not in self.ime.sadržaj:
+        if parametri[-1] == 0 and defaultString not in self.ime.sadržaj and self.ime.sadržaj + defaultString in funkcije.podaci.keys():
             defaultIme = Token(T.IME, self.ime.sadržaj + defaultString)
             return funkcije[defaultIme].pozovi(parametri, funkcije)
         return funkcije[self.ime].pozovi(parametri, funkcije)
+        
+
+class Minimize(AST):
+    def __init__(self, min_var, ime, argumenti):
+        self.min_var = min_var
+        self.ime = ime
+        self.argumenti = argumenti
     
+    def vrijednost(self, memorija, funkcije):
+        memorija[self.min_var] = 0
+        while ...:
+            argumenti = [argument.vrijednost(memorija, funkcije) for argument in self.argumenti]
+            check = funkcije[self.ime].pozovi(argumenti, funkcije)
+            if check == 1:
+                break
+            memorija[self.min_var] += 1 
+        return memorija[self.min_var]
+    
+    def izvrši(self, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
+    
+class MinimizeRelations(AST):
+    def __init__(self, min_var, relacije, argumenti, logic):
+        self.min_var = min_var
+        self.relacije = relacije
+        self.argumenti = argumenti
+        self.logic = logic
+
+    def vrijednost(self, memorija, funkcije):
+        memorija[self.min_var] = 0
+        while ...:
+            povratne = []
+            for i,argumentiRelacije in enumerate(iter(self.argumenti)):
+                argumenti = [argument.vrijednost(memorija, funkcije) for argument in argumentiRelacije]
+                povratne.append(funkcije[self.relacije[i]].pozovi(argumenti, funkcije))
+            if self.check(povratne):
+                break
+            memorija[self.min_var] += 1
+        return memorija[self.min_var]
+    
+    def izvrši(self, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
+    
+    def check(self, povratne):
+        value = povratne[0]
+        for i in range(1, len(povratne)):
+            if self.logic[i-1] == 'and':
+                value = value and povratne[i]
+            elif self.logic[i-1] == 'or':
+                value = value or povratne[i]
+        return value
+    
+class Logic(AST):
+    def __init__(self, terms, logic):
+        self.terms = terms
+        self.logic = logic
+
+    def vrijednost(self, memorija, funkcije):
+        value = self.terms[0].vrijednost(memorija, funkcije)
+        for i in range(1, len(self.terms)):
+            if self.logic[i-1] == 'and':
+                value = value and self.terms[i].vrijednost(memorija, funkcije)
+            elif self.logic[i-1] == 'or':
+                value = value or self.terms[i].vrijednost(memorija, funkcije)
+        if value:
+            return 1
+        return 0
+
+
+    def izvrši(self, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
+    
+class Literal(AST):
+    def __init__(self, istinitost, term):
+        self.istinitost = istinitost
+        self.term = term
+
+    def vrijednost(self, mem, unutar):
+        return self.term.vrijednost(mem, unutar) if self.istinitost == 'aff' else not self.term.vrijednost(mem, unutar)
+    
+
+class Cardinality(AST):
+    def __init__(self, card_var, inequality, bound, relacija, argumenti):
+        self.card_var = card_var
+        self.inequality = inequality
+        self.bound = bound
+        self.relacija = relacija
+        self.argumenti = argumenti
+    
+    def vrijednost(self, memorija, funkcije):
+        memorija[self.card_var] = 0
+        plus = 0
+        if self.inequality.sadržaj == '<=':
+            plus = 1
+        ograda = self.bound.vrijednost(memorija, funkcije)
+        argumenti = [argument.vrijednost(memorija, funkcije) for argument in self.argumenti]
+        for i in (range(ograda + plus)):
+            check = funkcije[self.relacija].pozovi(argumenti, funkcije)
+            if check == 1:
+                memorija[self.card_var] += 1.
+            for i,arg in enumerate(iter(self.argumenti)):
+                if arg.ime == self.card_var.sadržaj:
+                    argumenti[i] += 1
+                    break 
+        return memorija[self.card_var]
+    
+    def izvrši(self, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
 

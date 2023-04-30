@@ -146,6 +146,48 @@ class P(Parser):
         self.funkcije[ime] = function
         return function
     
+    def characteristic_function_definition(self):
+        self >> T.UGOTV
+        ime = self >> T.IME
+        self >> T.UGZATV
+        parametri = self.parameters()
+        if self >= T.NEWLINE:
+            return Call(ime, parametri)
+        self >> T.FUNCTION_EQUALS
+        izraz = self.expression()
+        self >> T.NEWLINE
+
+        function = Function(ime, parametri, izraz)
+        if parametri[-1].sadržaj == '0':
+            defaultIme = Token(T.IME, ime.sadržaj + defaultString)
+            if defaultIme not in self.funkcije:
+                function = Function(defaultIme, parametri, izraz)
+                self.funkcije[defaultIme] = function
+                return function
+        self.funkcije[ime] = function
+        return function
+    
+    def relation_definition(self):
+        self >> T.VOTV
+        ime = self >> T.IME
+        self >> T.VZATV
+        parametri = self.parameters()
+        if self >= T.NEWLINE:
+            return Call(ime, parametri)
+        self >> T.RELATION_EQUALS
+        izraz = self.expression()
+        self >> T.NEWLINE
+
+        relation = Function(ime, parametri, izraz)
+        if parametri[-1].sadržaj == '0':
+            defaultIme = Token(T.IME, ime.sadržaj + defaultString)
+            if defaultIme not in self.funkcije:
+                relation = Function(defaultIme, parametri, izraz)
+                self.funkcije[defaultIme] = relation
+                return relation
+        self.funkcije[ime] = relation
+        return relation
+    
     def parameters(self):
         self >> T.OOTV
         if self >= T.OZATV:
@@ -173,16 +215,30 @@ class P(Parser):
             return self >> T.BROJ
         
     def expression(self):
-        return self.term()
-    """
-        izraz = [self.term()]
-        while self >= T.PLUS:
-            izraz.append(self.term())
-        return Add(izraz)
-    """
+        logic = []
+        istinitost = 'aff'
+        if self >= T.USK:
+            istinitost = 'neg'
+        terms = [Literal(istinitost, self.term())]
+        while l := self >= {T.AND, T.OR}:
+            if l.sadržaj == '&&':
+                logic.append('and')
+            elif l.sadržaj == '||':
+                logic.append('or')
+            istinitost = 'aff'
+            if self >= T.USK:
+                istinitost = 'neg'
+            terms.append(Literal(istinitost, self.term()))
+        if len(logic) == 0 and istinitost == 'aff':
+            return terms[0].term
+        return Logic(terms, logic)
     
     def term(self):
         if self >= T.OOTV:
+            if self > T.MU:
+                return self.minimize(parentheses = True)
+            elif self > T.CARD:
+                return self.cardinality(parentheses = True)
             izraz = self.expression()
             self >> T.OZATV
             return izraz
@@ -190,9 +246,11 @@ class P(Parser):
             return self.function_call_or_name(ime)
         elif broj := self >= T.BROJ:
             return Integer(int(broj.sadržaj))
-        elif self >= T.MU:
-            return self.minimize()
-        elif self >= T.VOTV:
+        elif self > T.MU:
+            return self.minimize(parentheses = False)
+        elif self > T.CARD:
+            return self.cardinality(parentheses = False)
+        elif self > T.VOTV:
             return self.relation_call()
         else:
             return nenavedeno
@@ -203,7 +261,59 @@ class P(Parser):
             return Call(ime, argumenti)
         else:
             return Variable(ime.sadržaj)
+        
+    def minimize(self, parentheses):
+        self >> T.MU
+        min_var = self >> T.IME
+        if parentheses:
+            self >> T.OZATV
+        if self > T.OOTV:
+            return self.minimize_relations(min_var)
+        self >> T.VOTV
+        relacija = self >> T.IME
+        self >> T.VZATV
+        argumenti = self.arguments()
+        return Minimize(min_var, relacija, argumenti)
     
+    def cardinality(self, parentheses):
+        self >> T.CARD
+        card_var = self >> T.IME
+        inequality = self >> {T.MANJE, T.LEQ}
+        bound = self.expression()
+        if parentheses:
+            self >> T.OZATV
+        self >> T.VOTV
+        relacija = self >> T.IME
+        self >> T.VZATV
+        argumenti = self.arguments()
+        return Cardinality(card_var, inequality, bound, relacija, argumenti)
+    
+    def minimize_relations(self, min_var):
+        logic = []
+        self >> T.OOTV
+        self >> T.VOTV
+        relacije = [self >> T.IME]
+        self >> T.VZATV
+        argumenti = [self.arguments()]
+        while l := self >= {T.AND, T.OR}:
+            if l.sadržaj == '&&':
+                logic.append('and')
+            elif l.sadržaj == '||':
+                logic.append('or')
+            self >> T.VOTV
+            relacije.append(self >> T.IME)
+            self >> T.VZATV
+            argumenti.append(self.arguments())
+        self >> T.OZATV
+        return MinimizeRelations(min_var, relacije, argumenti, logic)
+        
+    def relation_call(self):
+        self >> T.VOTV
+        ime = self >> T.IME
+        self >> T.VZATV
+        argumenti = self.arguments()
+        return Call(ime, argumenti)
+
     def arguments(self):
         self >> T.OOTV
         if self >= T.OZATV:
