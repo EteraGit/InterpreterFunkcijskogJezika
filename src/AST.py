@@ -18,8 +18,6 @@ class Program(AST):
         self.karakteristične_funkcije = karakteristične_funkcije
     
     def izvrši(self):
-        for value in self.funkcije.podaci.values():
-            print(value.ime)
         for naredba in self.naredbe:
             if isinstance(naredba, Call):
                 if hasattr(naredba.parametri[-1], 'sadržaj') and int(naredba.parametri[-1].sadržaj) == 0 and naredba.ime.sadržaj + defaultString in self.funkcije.podaci.keys():

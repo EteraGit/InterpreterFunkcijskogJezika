@@ -1,10 +1,6 @@
 from vepar import *
 from AST import *
 from Token import *
-import pathlib
-import sys
-
-sys.setrecursionlimit(10000)
 
 @lexer
 def Lexer(lex):
@@ -324,14 +320,4 @@ class P(Parser):
         self >> T.OZATV
         return argumenti
 
-            
-s1 = pathlib.Path('Inputs/SampleInput.txt').read_text(encoding='utf-8')
-
-Lexer(s1)
-
-kôd = P(s1)
-
-prikaz(kôd)
-
-kôd.izvrši()
 
