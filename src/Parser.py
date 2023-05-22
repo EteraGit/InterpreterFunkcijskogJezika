@@ -46,6 +46,8 @@ def Lexer(lex):
             yield lex.literal(T)
 
 """
+!!!!!!!!!!!!!!!OUTDATED, NEEDS REVISION!!!!!!!!!!!!!!
+
 Beskontekstna gramatika:
 
 PROGRAM -> COMMAND | COMMAND PROGRAM
@@ -113,80 +115,25 @@ class P(Parser):
         return nenavedeno
 
     def command(self):
-        if self > T.IME:
-            return self.function_definition()
-        elif self > T.UGOTV:
-            return self.characteristic_function_definition()
-        elif self > T.VOTV:
-            return self.relation_definition()
-        else:
-            self >> T.NEWLINE
+        if self >= T.NEWLINE:
             return nenavedeno
+        else:
+            return self.function_definition()
         
     def function_definition(self):
-        ime = self >> T.IME
+        ime = 'default'
+        if self >= T.UGOTV:
+            ime = self >> T.IME
+            self >> T.UGZATV
+        elif self >= T.VOTV:
+            ime = self >> T.IME
+            self >> T.VZATV
+        else:
+            ime = self >> T.IME  
         parametri = self.parameters()
         if self >= T.NEWLINE:
             return Call(ime, parametri)
-        self >> T.FUNCTION_EQUALS
-        izraz = self.expression()
-        self >> T.NEWLINE
-
-        if isinstance(parametri[-1], Token) and parametri[-1].sadržaj == '0':
-            baseIme = Token(T.IME, ime.sadržaj + baseString)
-            if baseIme not in self.funkcije:
-                function = Function(baseIme, parametri, izraz)
-                self.funkcije[baseIme] = function
-                return function
-        elif isinstance(parametri[-1], Call) and parametri[-1].ime.sadržaj == 'Sc':
-            stepIme = Token(T.IME, ime.sadržaj + stepString)
-            if stepIme not in self.funkcije:
-                self.funkcije[ime] = Function(ime, parametri, izraz)
-                parametri.append(Token(T.IME, '#prev'))
-                function = Function(stepIme, parametri, izraz)
-                self.funkcije[stepIme] = function
-                return function
-        function = Function(ime, parametri, izraz)
-        self.funkcije[ime] = function
-        return function
-    
-    def characteristic_function_definition(self):
-        self >> T.UGOTV
-        ime = self >> T.IME
-        self >> T.UGZATV
-        parametri = self.parameters()
-        if self >= T.NEWLINE:
-            return Call(ime, parametri)
-        self >> T.FUNCTION_EQUALS
-        izraz = self.expression()
-        self >> T.NEWLINE
-
-        if isinstance(parametri[-1], Token) and parametri[-1].sadržaj == '0':
-            baseIme = Token(T.IME, ime.sadržaj + baseString)
-            if baseIme not in self.funkcije:
-                function = Function(baseIme, parametri, izraz)
-                self.funkcije[baseIme] = function
-                return function
-        elif isinstance(parametri[-1], Call) and parametri[-1].ime.sadržaj == 'Sc':
-            stepIme = Token(T.IME, ime.sadržaj + stepString)
-            if stepIme not in self.funkcije:
-                self.funkcije[ime] = Function(ime, parametri, izraz)
-                parametri.append(Token(T.IME, '#prev'))
-                function = Function(stepIme, parametri, izraz)
-                self.funkcije[stepIme] = function
-                return function
-        function = Function(ime, parametri, izraz)
-        self.funkcije[ime] = function
-        return function
-    
-    def relation_definition(self):
-        self >> T.VOTV
-        ime = self >> T.IME
-        self >> T.VZATV
-        parametri = self.parameters()
-        if self >= T.NEWLINE:
-            return Call(ime, parametri)
-        self >> T.RELATION_EQUALS
+        self >> {T.FUNCTION_EQUALS, T.RELATION_EQUALS, T.JEDNAKO}
         izraz = self.expression()
         self >> T.NEWLINE
 
@@ -220,52 +167,76 @@ class P(Parser):
 
     def parameter(self):
         if ime := self >= T.IME:
-            if self > T.ZAREZ or self > T.OZATV:
-                return ime
-            elif self > T.OOTV:
-                unutarnji = self.parameters()
-                return Call(ime, unutarnji)
-            else:
-                return nenavedeno
-        else:
-            return self >> T.BROJ
-        
-    def expression(self):
-        logic = []
-        istinitost = 'aff'
-        if self >= T.USK:
-            istinitost = 'neg'
-        terms = [Literal(istinitost, self.term())]
-        while l := self >= {T.AND, T.OR}:
-            if l.sadržaj == '&&':
-                logic.append('and')
-            elif l.sadržaj == '||':
-                logic.append('or')
-            istinitost = 'aff'
-            if self >= T.USK:
-                istinitost = 'neg'
-            terms.append(Literal(istinitost, self.term()))
-        if len(logic) == 0 and istinitost == 'aff':
-            return terms[0].term
-        return Logic(terms, logic)
-    
-    def term(self):
-        if self >= T.OOTV:
-            if self > T.MU:
-                return self.minimize(parentheses = True)
-            elif self > T.CARD:
-                return self.cardinality(parentheses = True)
-            izraz = self.expression()
-            self >> T.OZATV
-            return izraz
-        elif ime := self >= T.IME:
             return self.function_call_or_name(ime)
         elif broj := self >= T.BROJ:
-            return Integer(int(broj.sadržaj))
+            return broj
+        elif self >= T.OOTV:
+            if self > T.MU:
+                return self.minimize()
+            elif self > T.CARD:
+                return self.cardinality()    
         elif self > T.MU:
-            return self.minimize(parentheses = False)
+            return self.minimize()
         elif self > T.CARD:
-            return self.cardinality(parentheses = False)
+            return self.cardinality()
+        elif self > T.VOTV:
+            return self.relation_call()
+        else:
+            return nenavedeno
+        
+    def expression(self):
+        if self >= T.OOTV:    
+            logic = self.logical_OR()
+            self >= T.OZATV
+            return logic
+        return self.logical_OR()
+    
+    def logical_OR(self):
+        if self >= T.OOTV:
+            izraz = [self.logical_AND()]
+            while self >= T.OR:
+                izraz.append(self.logical_AND())
+            self >= T.OZATV
+            return Logical_OR(izraz)
+        izraz = [self.logical_AND()]
+        while self >= T.OR:
+            izraz.append(self.logical_AND())
+        return Logical_OR(izraz)
+    
+    def logical_AND(self):
+        if self >= T.OOTV:
+            izraz = [self.literal()]
+            while self >= T.AND:
+                izraz.append(self.literal())
+            self >= T.OZATV
+            return Logical_AND(izraz)
+        izraz = [self.literal()]
+        while self >= T.AND:
+            izraz.append(self.literal())
+        return Logical_AND(izraz)
+    
+    def literal(self):
+        if self >= T.OOTV:
+            if self >= T.USK:
+                literal = Literal('false', self.term())
+                self >= T.OZATV
+                return literal
+            literal = Literal('true', self.term())
+            self >= T.OZATV
+            return literal
+        if self >= T.USK:
+            return Literal('false', self.term())
+        return Literal('true', self.term())
+    
+    def term(self):
+        if ime := self >= T.IME:
+            return self.function_call_or_name(ime)
+        elif broj := self >= T.BROJ:
+            return broj
+        elif self > T.MU:
+            return self.minimize()
+        elif self > T.CARD:
+            return self.cardinality()
         elif self > T.VOTV:
             return self.relation_call()
         else:
@@ -273,71 +244,34 @@ class P(Parser):
         
     def function_call_or_name(self, ime):
         if self > T.OOTV:
-            argumenti = self.arguments()
+            argumenti = self.parameters()
             return Call(ime, argumenti)
         else:
-            return Variable(ime)
+            return ime
         
-    def minimize(self, parentheses):
+    def minimize(self):
         self >> T.MU
         min_var = self >> T.IME
-        if parentheses:
-            self >> T.OZATV
-        if self > T.OOTV:
-            return self.minimize_relations(min_var)
-        self >> T.VOTV
-        relacija = self >> T.IME
-        self >> T.VZATV
-        argumenti = self.arguments()
-        return Minimize(min_var, relacija, argumenti)
+        inequality = self >> {T.MANJE, T.LEQ}
+        bound = self.term()   
+        self >= T.OZATV
+        relacija = self.expression()
+        return Minimize(min_var, inequality, bound, relacija)
     
-    def cardinality(self, parentheses):
+    def cardinality(self):
         self >> T.CARD
         card_var = self >> T.IME
         inequality = self >> {T.MANJE, T.LEQ}
-        bound = self.expression()
-        if parentheses:
-            self >> T.OZATV
-        self >> T.VOTV
-        relacija = self >> T.IME
-        self >> T.VZATV
-        argumenti = self.arguments()
-        return Cardinality(card_var, inequality, bound, relacija, argumenti)
-    
-    def minimize_relations(self, min_var):
-        logic = []
-        self >> T.OOTV
-        self >> T.VOTV
-        relacije = [self >> T.IME]
-        self >> T.VZATV
-        argumenti = [self.arguments()]
-        while l := self >= {T.AND, T.OR}:
-            if l.sadržaj == '&&':
-                logic.append('and')
-            elif l.sadržaj == '||':
-                logic.append('or')
-            self >> T.VOTV
-            relacije.append(self >> T.IME)
-            self >> T.VZATV
-            argumenti.append(self.arguments())
-        self >> T.OZATV
-        return MinimizeRelations(min_var, relacije, argumenti, logic)
+        bound = self.term()
+        self >= T.OZATV
+        relacija = self.expression()
+        return Cardinality(card_var, inequality, bound, relacija)
         
     def relation_call(self):
         self >> T.VOTV
         ime = self >> T.IME
         self >> T.VZATV
-        argumenti = self.arguments()
+        argumenti = self.parameters()
         return Call(ime, argumenti)
-
-    def arguments(self):
-        self >> T.OOTV
-        if self >= T.OZATV:
-            return []
-        argumenti = [self.expression()]
-        while self >= T.ZAREZ:
-            argumenti.append(self.expression())
-        self >> T.OZATV
-        return argumenti
 
 

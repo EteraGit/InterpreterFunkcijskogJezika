@@ -63,7 +63,8 @@ class Function(AST):
         if stepString in self.ime.sadržaj:
             pomocni[-2] = Token(T.IME, self.parametri[-2].parametri[0].sadržaj) # promijeni Sc(x) u x
             lokalna = Memorija(zip(pomocni, argumenti))
-            return self.izraz.izvršiStep(self.ime.sadržaj[:-len(stepString)], argumenti[-1], lokalna, funkcije)
+            value = self.izraz.izvršiStep(self.ime.sadržaj[:-len(stepString)], argumenti[-1], lokalna, funkcije)
+            return value
         lokalna = Memorija(zip(pomocni, argumenti))
         return self.izraz.izvrši(lokalna, funkcije)
     
@@ -106,8 +107,7 @@ class Previous(AST):
     
     def izvršiStep(self, ime, prev, memorija, funkcije):
         return self.vrijednost(memorija, funkcije)
-
-    
+  
 class Call(AST):
     def __init__(self, ime, parametri):
         self.ime = ime
@@ -134,40 +134,22 @@ class Call(AST):
             elif isinstance(parametar, Call):
                 return parametar.find(ime, prev)
         
-
 class Minimize(AST):
-    def __init__(self, min_var, ime, argumenti):
+    def __init__(self, min_var, inequality, bound, relacija):
         self.min_var = min_var
-        self.ime = ime
-        self.argumenti = argumenti
+        self.inequality = inequality
+        self.bound = bound
+        self.relacija = relacija
     
     def vrijednost(self, memorija, funkcije):
         memorija[self.min_var] = 0
-        while ...:
-            argumenti = [argument.vrijednost(memorija, funkcije) for argument in self.argumenti]
-            if funkcije[self.ime].pozovi(argumenti, funkcije):
-                break
-            memorija[self.min_var] += 1 
-        return memorija[self.min_var]
-    
-    def izvrši(self, memorija, funkcije):
-        return self.vrijednost(memorija, funkcije)
-    
-class MinimizeRelations(AST):
-    def __init__(self, min_var, relacije, argumenti, logic):
-        self.min_var = min_var
-        self.relacije = relacije
-        self.argumenti = argumenti
-        self.logic = logic
-
-    def vrijednost(self, memorija, funkcije):
-        memorija[self.min_var] = 0
-        while ...:
-            povratne = []
-            for i,argumentiRelacije in enumerate(iter(self.argumenti)):
-                argumenti = [argument.vrijednost(memorija, funkcije) for argument in argumentiRelacije]
-                povratne.append(funkcije[self.relacije[i]].pozovi(argumenti, funkcije))
-            if self.check(povratne):
+        plus = 0
+        if self.inequality.sadržaj == '<=':
+            plus = 1
+        ograda = self.bound.vrijednost(memorija, funkcije)
+        for i in (range(ograda + plus)):
+            val = self.relacija.vrijednost(memorija, funkcije)
+            if val == 1:
                 break
             memorija[self.min_var] += 1
         return memorija[self.min_var]
@@ -175,51 +157,12 @@ class MinimizeRelations(AST):
     def izvrši(self, memorija, funkcije):
         return self.vrijednost(memorija, funkcije)
     
-    def check(self, povratne):
-        value = povratne[0]
-        for i in range(1, len(povratne)):
-            if self.logic[i-1] == 'and':
-                value = value and povratne[i]
-            elif self.logic[i-1] == 'or':
-                value = value or povratne[i]
-        return value
-    
-class Logic(AST):
-    def __init__(self, terms, logic):
-        self.terms = terms
-        self.logic = logic
-
-    def vrijednost(self, memorija, funkcije):
-        value = self.terms[0].vrijednost(memorija, funkcije)
-        for i in range(1, len(self.terms)):
-            if self.logic[i-1] == 'and':
-                value = value and self.terms[i].vrijednost(memorija, funkcije)
-            elif self.logic[i-1] == 'or':
-                value = value or self.terms[i].vrijednost(memorija, funkcije)
-        if value:
-            return 1
-        return 0
-
-
-    def izvrši(self, memorija, funkcije):
-        return self.vrijednost(memorija, funkcije)
-    
-class Literal(AST):
-    def __init__(self, istinitost, term):
-        self.istinitost = istinitost
-        self.term = term
-
-    def vrijednost(self, mem, unutar):
-        return self.term.vrijednost(mem, unutar) if self.istinitost == 'aff' else not self.term.vrijednost(mem, unutar)
-    
-
 class Cardinality(AST):
-    def __init__(self, card_var, inequality, bound, relacija, argumenti):
+    def __init__(self, card_var, inequality, bound, relacija):
         self.card_var = card_var
         self.inequality = inequality
         self.bound = bound
         self.relacija = relacija
-        self.argumenti = argumenti
     
     def vrijednost(self, memorija, funkcije):
         memorija[self.card_var] = 0
@@ -227,17 +170,65 @@ class Cardinality(AST):
         if self.inequality.sadržaj == '<=':
             plus = 1
         ograda = self.bound.vrijednost(memorija, funkcije)
-        argumenti = [argument.vrijednost(memorija, funkcije) for argument in self.argumenti]
+        count = 0
         for i in (range(ograda + plus)):
-            check = funkcije[self.relacija].pozovi(argumenti, funkcije)
-            if check == 1:
-                memorija[self.card_var] += 1.
-            for i,arg in enumerate(iter(self.argumenti)):
-                if arg.ime == self.card_var.sadržaj:
-                    argumenti[i] += 1
-                    break 
-        return memorija[self.card_var]
+            if self.relacija.vrijednost(memorija, funkcije):
+                count += 1
+            memorija[self.card_var] += 1
+        return count
     
     def izvrši(self, memorija, funkcije):
         return self.vrijednost(memorija, funkcije)
+    
+class Logical_OR(AST):
+    def __init__(self, logicalAND_list):
+        self.logicalAND_list = logicalAND_list
+
+    def vrijednost(self, memorija, funkcije):
+        for log_and in self.logicalAND_list:
+            value = log_and.vrijednost(memorija, funkcije)
+            if value:
+                return value
+        return 0
+    
+    def izvrši(self, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
+    
+    def izvršiStep(self, ime, prev, memorija, funkcije):
+        return self.logicalAND_list[0].izvršiStep(ime, prev, memorija, funkcije)
+    
+class Logical_AND(AST):
+    def __init__(self, literal_list):
+        self.literal_list = literal_list
+
+    def vrijednost(self, memorija, funkcije):
+        value = 0
+        for literal in self.literal_list:
+            value = literal.vrijednost(memorija, funkcije)
+            if not value:
+                return value
+        if len(self.literal_list) == 1:
+            return value
+        return 1
+    
+    def izvrši(self, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
+    
+    def izvršiStep(self, ime, prev, memorija, funkcije):
+        return self.literal_list[0].izvršiStep(ime, prev, memorija, funkcije)
+    
+class Literal(AST):
+    def __init__(self, istinitost, term):
+        self.istinitost = istinitost
+        self.term = term
+
+    def vrijednost(self, memorija, funkcije):
+        return self.term.vrijednost(memorija, funkcije) if self.istinitost == 'true' else not self.term.vrijednost(memorija, funkcije)
+    
+    def izvrši(self, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
+    
+    def izvršiStep(self, ime, prev, memorija, funkcije):
+        val = self.term.izvršiStep(ime, prev, memorija, funkcije)
+        return val if self.istinitost == 'true' else not val
 

@@ -7,9 +7,17 @@ class T(TipoviTokena):
     class BROJ(Token):
         def vrijednost(self, mem, unutar): 
             return int(self.sadržaj)
+        def izvrši(self, mem, unutar):
+            return int(self.sadržaj)
+        def izvršiStep(self, ime, prev, mem, unutar):
+            return int(self.sadržaj)
 
     class IME(Token):
         def vrijednost(self, mem, unutar): 
+            return mem[self]
+        def izvrši(self, mem, unutar):
+            return mem[self]
+        def izvršiStep(self, ime, prev, mem, unutar):
             return mem[self]
         
       

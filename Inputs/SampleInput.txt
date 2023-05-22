@@ -26,7 +26,7 @@ factorial(Sc(n)):=mul(Sc(n),factorial(n))
 
 {Greater}(x,y):<=>{Positive}(sub(x,y))  // za x = y ne radi kako treba
 
-div(x,y):=pd((mu z){Greater}(mul(z,y),x))
+div(x,y):=pd((mu z <= x){Greater}(mul(z,y),x))
 
 mod(x,y):=sub(x,mul(y,div(x,y)))   // (x-(y*(x//y)))
 
@@ -36,10 +36,9 @@ mod(x,y):=sub(x,mul(y,div(x,y)))   // (x-(y*(x//y)))
 
 {Prime}(p):<=>{Equal}((#d<=p){Divides}(d,p), 2)
 
-nextprime(p):=(mu q)({Prime}(q) && {Greater}(q,p))  // eventualno AND(...)
+nextprime(p):=(mu q <= mul(p,2))({Prime}(q) && {Greater}(q,p))  // eventualno AND(...)
 
-
-// Ograničeno: (keyword x <(=) izraz)relacija
+{CustomRelation}(x,y):<=> !{Greater}(y,x) && {Divides}(y,x) || Equal(x,y)
 
 add(10, 5) // 15
 
@@ -91,15 +90,20 @@ Equal(10, 9)    // 0
 
 Divides(2, 10)  // 1
 Divides(3, 10)  // 0
+Divides(0, 10)  // 0
 
-/*
-Prime(1)    // 0
 Prime(2)    // 1
 Prime(3)    // 1
 Prime(4)    // 0
 Prime(5)    // 1
 Prime(6)    // 0
 Prime(7)    // 1
+Prime(8)    // 0
+Prime(9)    // 0
+Prime(10)   // 0
+Prime(11)   // 1
+Prime(12)   // 0
+
 
 nextprime(2)    // 3
 nextprime(3)    // 5
@@ -107,5 +111,12 @@ nextprime(4)    // 5
 nextprime(5)    // 7
 nextprime(6)    // 7
 nextprime(7)    // 11
+nextprime(8)    // 11
+nextprime(9)    // 11
+nextprime(10)   // 11
+nextprime(11)   // 13
 
-*/
+CustomRelation(10, 2)   // 1
+CustomRelation(5, 5)   // 1
+CustomRelation(10, 3)   // 0
+
