@@ -4,19 +4,11 @@ from Token import *
 baseString = '#Base'
 stepString = '#Step'
 
-def nađiZadnju(memorija):
-    return list(memorija.podaci.keys())[-1]
-
-class Povratak(NelokalnaKontrolaToka):
-    """Signal koji šalje naredba vrati."""
-
 class Program(AST):
 
-    def __init__(self, naredbe, funkcije, relacije, karakteristične_funkcije):
+    def __init__(self, naredbe, funkcije):
         self.naredbe = naredbe
         self.funkcije = funkcije
-        self.relacije = relacije
-        self.karakteristične_funkcije = karakteristične_funkcije
     
     def izvrši(self):
         print(self.funkcije.podaci.keys())
@@ -231,12 +223,12 @@ class Literal(AST):
         self.term = term
 
     def vrijednost(self, memorija, funkcije):
-        return self.term.vrijednost(memorija, funkcije) if self.istinitost == 'true' else not self.term.vrijednost(memorija, funkcije)
+        return self.term.vrijednost(memorija, funkcije) if self.istinitost else not self.term.vrijednost(memorija, funkcije)
     
     def izvrši(self, memorija, funkcije):
         return self.vrijednost(memorija, funkcije)
     
     def izvršiStep(self, ime, prev, memorija, funkcije):
         val = self.term.izvršiStep(ime, prev, memorija, funkcije)
-        return val if self.istinitost == 'true' else not val
+        return val if self.istinitost else not val
 

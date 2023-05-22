@@ -100,13 +100,11 @@ class P(Parser):
 
     def program(self):
         self.funkcije = Memorija(redefinicija=True)
-        self.relacije = Memorija(redefinicija=False)
-        self.karakteristične_funkcije = Memorija(redefinicija=False)
         self.define_known_functions()
         commands = []
         while not self > KRAJ:
             commands.append(self.command())
-        return Program(commands, self.funkcije, self.relacije, self.karakteristične_funkcije)
+        return Program(commands, self.funkcije)
 
     def define_known_functions(self):
         self.funkcije['Z'] = PythonFunction(Token(T.IME, 'Z'), [Token(T.IME, 'x')], lambda x: 0)
@@ -218,15 +216,15 @@ class P(Parser):
     def literal(self):
         if self >= T.OOTV:
             if self >= T.USK:
-                literal = Literal('false', self.term())
+                literal = Literal(False, self.term())
                 self >= T.OZATV
                 return literal
-            literal = Literal('true', self.term())
+            literal = Literal(True, self.term())
             self >= T.OZATV
             return literal
         if self >= T.USK:
-            return Literal('false', self.term())
-        return Literal('true', self.term())
+            return Literal(False, self.term())
+        return Literal(True, self.term())
     
     def term(self):
         if ime := self >= T.IME:
