@@ -107,9 +107,9 @@ class P(Parser):
         return Program(commands, self.funkcije, self.relacije, self.karakteristične_funkcije)
 
     def define_known_functions(self):
-        self.funkcije['Z'] = Function(Token(T.IME, 'Z'), [Token(T.IME, 'x')], Integer(0))
-        self.funkcije['Sc'] = Function(Token(T.IME, 'Sc'), [Token(T.IME, 'x')], Add([Variable('x'), Integer(1)]))
-        self.funkcije['I'] = Function(Token(T.IME, 'I'), [Token(T.IME, 'x')], Variable('x'))
+        self.funkcije['Z'] = PythonFunction(Token(T.IME, 'Z'), [Token(T.IME, 'x')], lambda x: 0)
+        self.funkcije['Sc'] = PythonFunction(Token(T.IME, 'Sc'), [Token(T.IME, 'x')], lambda x: x + 1)
+        self.funkcije['I'] = PythonFunction(Token(T.IME, 'I'), [Token(T.IME, 'x')], lambda x: x)
         return nenavedeno
 
     def command(self):
@@ -132,13 +132,21 @@ class P(Parser):
         izraz = self.expression()
         self >> T.NEWLINE
 
-        function = Function(ime, parametri, izraz)
-        if parametri[-1].sadržaj == '0':
-            defaultIme = Token(T.IME, ime.sadržaj + defaultString)
-            if defaultIme not in self.funkcije:
-                function = Function(defaultIme, parametri, izraz)
-                self.funkcije[defaultIme] = function
+        if isinstance(parametri[-1], Token) and parametri[-1].sadržaj == '0':
+            baseIme = Token(T.IME, ime.sadržaj + baseString)
+            if baseIme not in self.funkcije:
+                function = Function(baseIme, parametri, izraz)
+                self.funkcije[baseIme] = function
                 return function
+        elif isinstance(parametri[-1], Call) and parametri[-1].ime.sadržaj == 'Sc':
+            stepIme = Token(T.IME, ime.sadržaj + stepString)
+            if stepIme not in self.funkcije:
+                self.funkcije[ime] = Function(ime, parametri, izraz)
+                parametri.append(Token(T.IME, '#prev'))
+                function = Function(stepIme, parametri, izraz)
+                self.funkcije[stepIme] = function
+                return function
+        function = Function(ime, parametri, izraz)
         self.funkcije[ime] = function
         return function
     
@@ -153,13 +161,21 @@ class P(Parser):
         izraz = self.expression()
         self >> T.NEWLINE
 
-        function = Function(ime, parametri, izraz)
-        if parametri[-1].sadržaj == '0':
-            defaultIme = Token(T.IME, ime.sadržaj + defaultString)
-            if defaultIme not in self.funkcije:
-                function = Function(defaultIme, parametri, izraz)
-                self.funkcije[defaultIme] = function
+        if isinstance(parametri[-1], Token) and parametri[-1].sadržaj == '0':
+            baseIme = Token(T.IME, ime.sadržaj + baseString)
+            if baseIme not in self.funkcije:
+                function = Function(baseIme, parametri, izraz)
+                self.funkcije[baseIme] = function
                 return function
+        elif isinstance(parametri[-1], Call) and parametri[-1].ime.sadržaj == 'Sc':
+            stepIme = Token(T.IME, ime.sadržaj + stepString)
+            if stepIme not in self.funkcije:
+                self.funkcije[ime] = Function(ime, parametri, izraz)
+                parametri.append(Token(T.IME, '#prev'))
+                function = Function(stepIme, parametri, izraz)
+                self.funkcije[stepIme] = function
+                return function
+        function = Function(ime, parametri, izraz)
         self.funkcije[ime] = function
         return function
     
@@ -174,15 +190,23 @@ class P(Parser):
         izraz = self.expression()
         self >> T.NEWLINE
 
-        relation = Function(ime, parametri, izraz)
-        if parametri[-1].sadržaj == '0':
-            defaultIme = Token(T.IME, ime.sadržaj + defaultString)
-            if defaultIme not in self.funkcije:
-                relation = Function(defaultIme, parametri, izraz)
-                self.funkcije[defaultIme] = relation
-                return relation
-        self.funkcije[ime] = relation
-        return relation
+        if isinstance(parametri[-1], Token) and parametri[-1].sadržaj == '0':
+            baseIme = Token(T.IME, ime.sadržaj + baseString)
+            if baseIme not in self.funkcije:
+                function = Function(baseIme, parametri, izraz)
+                self.funkcije[baseIme] = function
+                return function
+        elif isinstance(parametri[-1], Call) and parametri[-1].ime.sadržaj == 'Sc':
+            stepIme = Token(T.IME, ime.sadržaj + stepString)
+            if stepIme not in self.funkcije:
+                self.funkcije[ime] = Function(ime, parametri, izraz)
+                parametri.append(Token(T.IME, '#prev'))
+                function = Function(stepIme, parametri, izraz)
+                self.funkcije[stepIme] = function
+                return function
+        function = Function(ime, parametri, izraz)
+        self.funkcije[ime] = function
+        return function
     
     def parameters(self):
         self >> T.OOTV
@@ -202,11 +226,7 @@ class P(Parser):
                 unutarnji = self.parameters()
                 return Call(ime, unutarnji)
             else:
-                self >> T.PLUS
-                broj = self >> T.BROJ
-                if int(broj.sadržaj) != 1:
-                    raise SintaksnaGreška('Zadnji argument funkcijskog parametra mora biti oblika (varijabla + 1)')
-                return Token(T.IME, ime.sadržaj + '+1')
+                return nenavedeno
         else:
             return self >> T.BROJ
         
@@ -256,7 +276,7 @@ class P(Parser):
             argumenti = self.arguments()
             return Call(ime, argumenti)
         else:
-            return Variable(ime.sadržaj)
+            return Variable(ime)
         
     def minimize(self, parentheses):
         self >> T.MU

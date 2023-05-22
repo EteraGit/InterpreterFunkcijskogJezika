@@ -1,7 +1,8 @@
 from vepar import *
 from Token import *
 
-defaultString = 'Default'
+baseString = '#Base'
+stepString = '#Step'
 
 def nađiZadnju(memorija):
     return list(memorija.podaci.keys())[-1]
@@ -18,14 +19,27 @@ class Program(AST):
         self.karakteristične_funkcije = karakteristične_funkcije
     
     def izvrši(self):
+        print(self.funkcije.podaci.keys())
         for naredba in self.naredbe:
             if isinstance(naredba, Call):
-                if hasattr(naredba.parametri[-1], 'sadržaj') and int(naredba.parametri[-1].sadržaj) == 0 and naredba.ime.sadržaj + defaultString in self.funkcije.podaci.keys():
+                if hasattr(naredba.parametri[-1], 'sadržaj') and int(naredba.parametri[-1].sadržaj) == 0 and naredba.ime.sadržaj + baseString in self.funkcije.podaci.keys():
                     defaultNaredba = naredba
-                    defaultNaredba.ime = Token(T.IME, naredba.ime.sadržaj + defaultString)
+                    defaultNaredba.ime = Token(T.IME, naredba.ime.sadržaj + baseString)
                     print(defaultNaredba.izvrši(Memorija(), self.funkcije))
                 else:
                     print(naredba.izvrši(Memorija(), self.funkcije))
+
+class PythonFunction(AST):
+    def __init__(self, ime, parametri, izraz):
+        self.ime = ime
+        self.parametri = parametri
+        self.izraz = izraz
+
+    def izvrši(self, memorija, funkcije):
+        funkcije[self.ime] = self
+    
+    def pozovi(self, argumenti, funkcije):
+        return self.izraz(argumenti[0])
 
 class Function(AST):
     def __init__(self, ime, parametri, izraz):
@@ -37,25 +51,21 @@ class Function(AST):
         funkcije[self.ime] = self
 
     def pozovi(self, argumenti, funkcije):
+        if baseString not in self.ime.sadržaj and stepString not in self.ime.sadržaj and self.ime.sadržaj + baseString in funkcije.podaci.keys():
+            z = funkcije[self.ime.sadržaj + baseString].pozovi(argumenti[:-1], funkcije)
+            for i in range(argumenti[-1]):
+                args = argumenti[:-1]
+                args.append(i)
+                args.append(z)
+                z = funkcije[self.ime.sadržaj + stepString].pozovi(args, funkcije)
+            return z
         pomocni = self.parametri.copy()
-        if self.parametri[-1].sadržaj[-2:] == '+1':
-            argumenti[-1] -= 1
-            pomocni[-1] = Token(T.IME, self.parametri[-1].sadržaj[:-2])
+        if stepString in self.ime.sadržaj:
+            pomocni[-2] = Token(T.IME, self.parametri[-2].parametri[0].sadržaj) # promijeni Sc(x) u x
+            lokalna = Memorija(zip(pomocni, argumenti))
+            return self.izraz.izvršiStep(self.ime.sadržaj[:-len(stepString)], argumenti[-1], lokalna, funkcije)
         lokalna = Memorija(zip(pomocni, argumenti))
-        try:
-            return self.izraz.izvrši(lokalna, funkcije)
-        except Povratak as povratak:
-            return povratak.vrijednost
-
-class Add(AST):
-    def __init__(self, izraz):
-        self.izraz = izraz
-    
-    def vrijednost(self, memorija, funkcije):
-        return sum(term.vrijednost(memorija, funkcije) for term in self.izraz)
-    
-    def izvrši(self, memorija, funkcije):
-        return self.vrijednost(memorija, funkcije)
+        return self.izraz.izvrši(lokalna, funkcije)
     
 class Variable(AST):
     def __init__(self, ime):
@@ -65,8 +75,9 @@ class Variable(AST):
         return memorija[self.ime]
     
     def izvrši(self, memorija, funkcije):
-        #if memorija.__len__() != 0 and memorija[nađiZadnju(memorija)] > 0:
-            #memorija[nađiZadnju(memorija)] -= 1
+        return self.vrijednost(memorija, funkcije)
+    
+    def izvršiStep(self, ime, prev, memorija, funkcije):
         return self.vrijednost(memorija, funkcije)
     
 class Integer(AST):
@@ -78,6 +89,23 @@ class Integer(AST):
     
     def izvrši(self, memorija, funkcije):
         return self.vrijednost(memorija, funkcije)
+    
+    def izvršiStep(self, ime, prev, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
+    
+class Previous(AST):
+    def __init__(self, ime, value):
+        self.value = value
+        self.ime = Token(T.IME, ime)
+    
+    def vrijednost(self, memorija, funkcije):
+        return self.value
+    
+    def izvrši(self, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
+    
+    def izvršiStep(self, ime, prev, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
 
     
 class Call(AST):
@@ -86,31 +114,25 @@ class Call(AST):
         self.parametri = parametri
 
     def vrijednost(self, memorija, funkcije):
-        if memorija.__len__() != 0 and memorija[nađiZadnju(memorija)] <= 0 and self.ime.sadržaj + defaultString in funkcije.podaci.keys():
-            defaultIme = Token(T.IME, self.ime.sadržaj + defaultString)
-            povratak = funkcije[defaultIme].izraz.izvrši(memorija, funkcije)
-            return povratak
-        if len(self.parametri) > 0:
-            vrijednosti, pomocne = [], []
-            for i,parametar in enumerate(self.parametri):
-                pomocne.append(funkcije[self.ime].parametri[i])
-                vrijednosti.append(parametar.vrijednost(memorija, funkcije))
-            if pomocne[-1].sadržaj[-2:] == '+1':
-                pomocne[-1] = Token(T.IME, pomocne[-1].sadržaj[:-2])
-            povratak = funkcije[self.ime].pozovi(vrijednosti, funkcije)
-            return povratak
-        vrijednosti = []
-        for parametar in self.parametri:
-            vrijednosti.append(parametar.vrijednost(memorija, funkcije))
-        povratak = funkcije[self.ime].pozovi(vrijednosti, funkcije)
-        return povratak
+        parametri = [parametar.vrijednost(memorija, funkcije) for parametar in self.parametri]
+        return funkcije[self.ime].pozovi(parametri, funkcije)
     
     def izvrši(self, memorija, funkcije):
         parametri = [parametar.vrijednost(memorija, funkcije) for parametar in self.parametri]
-        if parametri[-1] == 0 and defaultString not in self.ime.sadržaj and self.ime.sadržaj + defaultString in funkcije.podaci.keys():
-            defaultIme = Token(T.IME, self.ime.sadržaj + defaultString)
-            return funkcije[defaultIme].pozovi(parametri, funkcije)
         return funkcije[self.ime].pozovi(parametri, funkcije)
+
+    def izvršiStep(self, ime, prev, memorija, funkcije):
+        self.find(ime, prev)
+        parametri = [parametar.vrijednost(memorija, funkcije) for parametar in self.parametri]
+        return funkcije[self.ime].pozovi(parametri, funkcije)
+    
+    def find(self, ime, prev):
+        for i, parametar in enumerate(self.parametri):
+            if hasattr(parametar, 'ime') and parametar.ime.sadržaj == ime:
+                self.parametri[i] = Previous(ime, prev)
+                return self.parametri[i]
+            elif isinstance(parametar, Call):
+                return parametar.find(ime, prev)
         
 
 class Minimize(AST):
@@ -123,8 +145,7 @@ class Minimize(AST):
         memorija[self.min_var] = 0
         while ...:
             argumenti = [argument.vrijednost(memorija, funkcije) for argument in self.argumenti]
-            check = funkcije[self.ime].pozovi(argumenti, funkcije)
-            if check == 1:
+            if funkcije[self.ime].pozovi(argumenti, funkcije):
                 break
             memorija[self.min_var] += 1 
         return memorija[self.min_var]
