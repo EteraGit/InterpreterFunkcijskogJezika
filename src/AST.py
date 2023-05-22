@@ -143,16 +143,24 @@ class Minimize(AST):
     
     def vrijednost(self, memorija, funkcije):
         memorija[self.min_var] = 0
-        plus = 0
-        if self.inequality.sadržaj == '<=':
-            plus = 1
-        ograda = self.bound.vrijednost(memorija, funkcije)
-        for i in (range(ograda + plus)):
-            val = self.relacija.vrijednost(memorija, funkcije)
-            if val == 1:
-                break
-            memorija[self.min_var] += 1
-        return memorija[self.min_var]
+        if self.bound is None:
+            while True:
+                val = self.relacija.vrijednost(memorija, funkcije)
+                if val == 1:
+                    break
+                memorija[self.min_var] += 1
+            return memorija[self.min_var]
+        else:
+            plus = 0
+            if self.inequality.sadržaj == '<=':
+                plus = 1
+            ograda = self.bound.vrijednost(memorija, funkcije)
+            for i in (range(ograda + plus)):
+                val = self.relacija.vrijednost(memorija, funkcije)
+                if val == 1:
+                    break
+                memorija[self.min_var] += 1
+            return memorija[self.min_var]
     
     def izvrši(self, memorija, funkcije):
         return self.vrijednost(memorija, funkcije)

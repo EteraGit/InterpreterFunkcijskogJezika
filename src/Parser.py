@@ -252,8 +252,10 @@ class P(Parser):
     def minimize(self):
         self >> T.MU
         min_var = self >> T.IME
-        inequality = self >> {T.MANJE, T.LEQ}
-        bound = self.term()   
+        inequality = None
+        bound = None
+        if inequality := self >= {T.MANJE, T.LEQ}:
+            bound = self.term()
         self >= T.OZATV
         relacija = self.expression()
         return Minimize(min_var, inequality, bound, relacija)

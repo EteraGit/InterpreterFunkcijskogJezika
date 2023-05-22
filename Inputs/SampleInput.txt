@@ -7,6 +7,9 @@ pd(Sc(y)):=y
 sub(x,0):=x
 sub(x,Sc(y)):=pd(sub(x,y))
 
+doubleSub(x,0):=x
+doubleSub(x,Sc(y)):=pd(pd(doubleSub(x,y)))
+
 // zakomentirano za sad (x+y) ::= add(x,y)   // nice to have
 
 f(x,y):=add(Sc(Sc(x)),y)
@@ -39,6 +42,8 @@ mod(x,y):=sub(x,mul(y,div(x,y)))   // (x-(y*(x//y)))
 nextprime(p):=(mu q <= mul(p,2))({Prime}(q) && {Greater}(q,p))  // eventualno AND(...)
 
 {CustomRelation}(x,y):<=> !{Greater}(y,x) && {Divides}(y,x) || Equal(x,y)
+
+{RelationWithFunctions}(x,y):<=> sub(x,y) && pd(y)
 
 add(10, 5) // 15
 
@@ -119,4 +124,9 @@ nextprime(11)   // 13
 CustomRelation(10, 2)   // 1
 CustomRelation(5, 5)   // 1
 CustomRelation(10, 3)   // 0
+
+doubleSub(10, 2)    // 6
+
+RelationWithFunctions(10, 2)    // 1
+RelationWithFunctions(10, 1)    // 0
 
