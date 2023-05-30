@@ -57,6 +57,8 @@ Zagrade1(x,y):<=> Divides(x,y) || (Greater(x,y) && !Equal(x,y)) && !(Prime(x) ||
 
 Zagrade2(x,y):<=> (!Prime(nextprime(x)) || nextprime(y)) && !Equal(x,y)
 
+[(mu x <= 10) Greater(x,5) * 2] // 12
+
 nextprime(11) // 13
 
 [add(10, 5) * [3 - 1]]  // 30

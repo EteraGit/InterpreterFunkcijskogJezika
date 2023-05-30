@@ -52,13 +52,31 @@ program -> command | command program
 
 command -> function_definition | infix_definition
 
-function_definition -> IME ( parameters ) = expression | Call(IME, parameters)
+function_definition -> IME ( left_parameters ) = expression | IME ( left_parameters ) = left_parameter | Call(IME, right_parameters)
 
-infix_definition -> [parameter OP parameter] = expression
+infix_definition -> [left_parameter OP left_parameter] = expression | Call(right_parameter, OP, right_parameter)
 
-parameters -> parameter | parameter , parameters
+left_parameters -> left_parameter | left_parameter , left_parameters
 
-parameter -> IME | BROJ | Call
+left_parameter -> IME | BROJ | Call(IME, left_parameters)
+
+right_parameters -> right_parameter | right_parameter , right_parameters
+
+right_parameter -> expression
+
+expression -> logical_or
+
+logical_or -> logical_and | logical_and || logical_or
+
+logical_and -> literal | literal && logical_and
+
+literal -> ! literal | (minimize) | (cardinality) | (expression) | term
+
+term -> IME | BROJ | Call(IME, right_parameters) | minimize | cardinality
+
+minimize -> MU (< or <=) term expression | (MU (< or <=) term) expression
+
+cardinality -> CARD (< or <=) term expression | (CARD (< or <=) term) expression
 """
 
 
@@ -96,7 +114,7 @@ class P(Parser):
                 drugi = self.left_parameter()
                 self >> T.UGZATV
                 self >> {T.FUNCTION_EQUALS, T.JEDNAKO}
-                izraz = self.right_side_prim_rek()
+                izraz = self.left_parameter()
             else:                           # ako smo procitali funkciju, onda je to poziv infix funkcije           
                 prvi = self.right_function_call_or_name(ime)
                 operator = self >> T.OP
@@ -148,7 +166,7 @@ class P(Parser):
         self >> {T.FUNCTION_EQUALS, T.RELATION_EQUALS, T.JEDNAKO}
         izraz = None
         if (isinstance(parametri[-1], Token) and parametri[-1].sadržaj == '0') or (isinstance(parametri[-1], Call) and parametri[-1].ime.sadržaj == 'Sc'):
-            izraz = self.right_side_prim_rek()
+            izraz = self.left_parameter()
         else:
             izraz = self.expression()
         self >> T.NEWLINE
@@ -170,20 +188,6 @@ class P(Parser):
         function = Function(ime, parametri, izraz)
         self.funkcije[ime] = function
         return function
-    
-    def right_side_prim_rek(self):
-        if ime := self >= T.IME:
-            return self.left_function_call_or_name(ime)
-        elif broj := self >= T.BROJ:
-            return broj
-        elif self >= T.UGOTV:
-            prvi = self.left_parameter()
-            operator = self >> T.OP
-            drugi = self.left_parameter()
-            self >> T.UGZATV
-            return Call(operator, [prvi, drugi])
-        else:
-            return nenavedeno
     
     def left_parameters(self):
         self >> T.OOTV
