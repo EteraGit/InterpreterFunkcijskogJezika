@@ -2,7 +2,7 @@ from vepar import *
 
 class T(TipoviTokena):
     FUNCTION_EQUALS, RELATION_EQUALS, AND, OR, LEQ, MU, NEWLINE = ':=', ':<=>', '&&', '||', '<=', 'mu', '\n'
-    USK, CARD, OOTV, OZATV, VOTV, VZATV, UGOTV, UGZATV, JEDNAKO, TOČKAZ, PLUS, MINUS, PUTA, DIJELJENO, ZAREZ, MANJE = '!#(){}[]=;+-*/,<'
+    USK, CARD, OOTV, OZATV, VOTV, VZATV, UGOTV, UGZATV, JEDNAKO, ZAREZ, MANJE = '!#(){}[]=,<'
 
     class BROJ(Token):
         def vrijednost(self, mem, unutar): 
@@ -19,5 +19,13 @@ class T(TipoviTokena):
             return mem[self]
         def izvršiStep(self, ime, prev, mem, unutar):
             return mem[self]
+        
+    class OP(Token):
+        def vrijednost(self, mem, unutar): 
+            return self
+        def izvrši(self, mem, unutar):
+            return self
+        def izvršiStep(self, ime, prev, mem, unutar):
+            return self
         
       

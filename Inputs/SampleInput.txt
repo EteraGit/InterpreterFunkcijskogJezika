@@ -7,10 +7,19 @@ pd(Sc(y)):=y
 sub(x,0):=x
 sub(x,Sc(y)):=pd(sub(x,y))
 
+mul(x,0):=0
+mul(x,Sc(y)):=add(x,mul(x,y))
+
 doubleSub(x,0):=x
 doubleSub(x,Sc(y)):=pd(pd(doubleSub(x,y)))
 
-// zakomentirano za sad (x+y) ::= add(x,y)   // nice to have
+[x+0]:=x
+[x+Sc(y)]:=Sc([x+y])
+
+[x-y]:=sub(x,y)
+
+[x*0]:=0
+[x*Sc(y)]:=[x+[x*y]]
 
 f(x,y):=add(Sc(Sc(x)),y)
 
@@ -18,32 +27,55 @@ g(x,y):=add(sub(x,y), y)
 
 h(x,y,z):=mul(Sc(z), sub(x,y))
 
-mul(x,0):=0
-mul(x,Sc(y)):=add(x,mul(x,y))
-
 factorial(0):=1
 factorial(Sc(n)):=mul(Sc(n),factorial(n))
 
-[Positive](0):=0
-[Positive](Sc(x)):=1
+Positive(0):=0
+Positive(Sc(x)):=1
 
-{Greater}(x,y):<=>{Positive}(sub(x,y))  // za x = y ne radi kako treba
+Greater(x,y):<=>Positive(sub(x,y))
 
-div(x,y):=pd((mu z <= x){Greater}(mul(z,y),x))
+div(x,y):=pd((mu z <= x)Greater(mul(z,y),x))
 
 mod(x,y):=sub(x,mul(y,div(x,y)))   // (x-(y*(x//y)))
 
-{Equal}(x,y):<=>!{Greater}(x,y) && !{Greater}(y,x)
+Equal(x,y):<=>!Greater(x,y) && !Greater(y,x)
 
-{Divides}(x,y):<=>{Equal}(mod(y,x),Z(x))  // moze i Equal(mod(x,y),0)
+Divides(x,y):<=>Equal(mod(y,x),Z(x))  // moze i Equal(mod(x,y),0)
 
-{Prime}(p):<=>{Equal}((#d<=p){Divides}(d,p), 2)
+Prime(p):<=>Equal((#d<=p)Divides(d,p), 2)
 
-nextprime(p):=(mu q <= mul(p,2))({Prime}(q) && {Greater}(q,p))  // eventualno AND(...)
+nextprime(p):=(mu q <= mul(p,2))(Prime(q) && Greater(q,p))  // eventualno AND(...)
 
-{CustomRelation}(x,y):<=> !{Greater}(y,x) && {Divides}(y,x) || Equal(x,y)
+CustomRelation(x,y):<=> !Greater(y,x) && Divides(y,x) || Equal(x,y)
 
-{RelationWithFunctions}(x,y):<=> sub(x,y) && pd(y)
+RelationWithFunctions(x,y):<=> sub(x,y) && pd(y)
+
+Zagrade0(x,y,z):<=> !(Greater(x,y) && Greater(y,z)) && (Greater(z,y) && Greater(y,x))
+
+Zagrade1(x,y):<=> Divides(x,y) || (Greater(x,y) && !Equal(x,y)) && !(Prime(x) || Prime(y))
+
+Zagrade2(x,y):<=> (!Prime(nextprime(x)) || nextprime(y)) && !Equal(x,y)
+
+nextprime(11) // 13
+
+[add(10, 5) * [3 - 1]]  // 30
+
+[10 + [[5 - 2] * 7]]  // 31
+
+nextprime([Greater(1,2) || Greater(2,1) + Prime(7)]) // 3
+
+[Prime(2) + nextprime(10)]  // 12
+
+Greater([factorial([2+2]) - nextprime(2)], 2) // 1
+
+[[add(10,[2+3]) * [0-2]] + [[7 * nextprime(6)] - 12]]  // 37
+
+Zagrade0(5,6,7) // 1
+
+Zagrade1(10,4) // 1
+
+Zagrade2(5,4) // 1
 
 add(10, 5) // 15
 
@@ -108,7 +140,6 @@ Prime(9)    // 0
 Prime(10)   // 0
 Prime(11)   // 1
 Prime(12)   // 0
-
 
 nextprime(2)    // 3
 nextprime(3)    // 5

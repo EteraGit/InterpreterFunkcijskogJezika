@@ -43,7 +43,8 @@ class Function(AST):
         funkcije[self.ime] = self
 
     def pozovi(self, argumenti, funkcije):
-        if baseString not in self.ime.sadržaj and stepString not in self.ime.sadržaj and self.ime.sadržaj + baseString in funkcije.podaci.keys():
+        # print('pozivam funkciju', self.ime.sadržaj, 's argumentima', argumenti)
+        if baseString not in self.ime.sadržaj and stepString not in self.ime.sadržaj and self.ime.sadržaj + baseString in funkcije:
             z = funkcije[self.ime.sadržaj + baseString].pozovi(argumenti[:-1], funkcije)
             for i in range(argumenti[-1]):
                 args = argumenti[:-1]
@@ -123,8 +124,8 @@ class Call(AST):
             if hasattr(parametar, 'ime') and parametar.ime.sadržaj == ime:
                 self.parametri[i] = Previous(ime, prev)
                 return self.parametri[i]
-            elif isinstance(parametar, Call):
-                return parametar.find(ime, prev)
+            elif isinstance(parametar, Logical_OR):
+                return parametar.logicalAND_list[0].literal_list[0].find(ime, prev)
         
 class Minimize(AST):
     def __init__(self, min_var, inequality, bound, relacija):
@@ -197,6 +198,14 @@ class Logical_OR(AST):
     def izvršiStep(self, ime, prev, memorija, funkcije):
         return self.logicalAND_list[0].izvršiStep(ime, prev, memorija, funkcije)
     
+    def find(self, ime, prev):
+        for i, parametar in enumerate(self.logicalAND_list):
+            if hasattr(parametar, 'ime') and parametar.ime.sadržaj == ime:
+                self.logicalAND_list[i] = Previous(ime, prev)
+                return self.logicalAND_list[i]
+            elif isinstance(parametar, Logical_AND):
+                return parametar.find(ime, prev)
+    
 class Logical_AND(AST):
     def __init__(self, literal_list):
         self.literal_list = literal_list
@@ -217,6 +226,14 @@ class Logical_AND(AST):
     def izvršiStep(self, ime, prev, memorija, funkcije):
         return self.literal_list[0].izvršiStep(ime, prev, memorija, funkcije)
     
+    def find(self, ime, prev):
+        for i, parametar in enumerate(self.literal_list):
+            if hasattr(parametar, 'ime') and parametar.ime.sadržaj == ime:
+                self.literal_list[i] = Previous(ime, prev)
+                return self.literal_list[i]
+            elif isinstance(parametar, Literal):
+                return parametar.find(ime, prev)
+    
 class Literal(AST):
     def __init__(self, istinitost, term):
         self.istinitost = istinitost
@@ -231,4 +248,11 @@ class Literal(AST):
     def izvršiStep(self, ime, prev, memorija, funkcije):
         val = self.term.izvršiStep(ime, prev, memorija, funkcije)
         return val if self.istinitost else not val
+    
+    def find(self, ime, prev):
+        if hasattr(self.term, 'ime') and self.term.ime.sadržaj == ime:
+            self.term = Previous(ime, prev)
+            return Previous(ime, prev)
+        elif isinstance(self.term, Call):
+            return self.term.find(ime, prev)
 
