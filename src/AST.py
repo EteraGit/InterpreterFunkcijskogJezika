@@ -124,8 +124,8 @@ class Call(AST):
             if hasattr(parametar, 'ime') and parametar.ime.sadržaj == ime:
                 self.parametri[i] = Previous(ime, prev)
                 return self.parametri[i]
-            elif isinstance(parametar, Logical_OR):
-                return parametar.logicalAND_list[0].literal_list[0].find(ime, prev)
+            elif isinstance(parametar, Call):
+                return parametar.find(ime, prev)
         
 class Minimize(AST):
     def __init__(self, min_var, inequality, bound, relacija):
