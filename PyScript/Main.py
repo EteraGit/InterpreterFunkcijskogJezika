@@ -4,7 +4,7 @@ from Token import *
 from Parser import *
 import pathlib
 
-ulaz = pathlib.Path('Inputs/SampleInput.txt').read_text(encoding='utf-8')
+ulaz = pathlib.Path('SampleInput.txt').read_text(encoding='utf-8')
 
 # Lexer(ulaz)
 

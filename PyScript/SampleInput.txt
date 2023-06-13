@@ -59,6 +59,8 @@ Zagrade2(x,y):<=> (!Prime(nextprime(x)) || nextprime(y)) && !Equal(x,y)
 
 [(mu x <= 10) Greater(x,5) * 2] // 12
 
+/*
+
 nextprime(11) // 13
 
 [add(10, 5) * [3 -- 1]]  // 30
@@ -163,5 +165,6 @@ doubleSub(10, 2)    // 6
 RelationWithFunctions(10, 2)    // 1
 RelationWithFunctions(10, 1)    // 0
 
-factorial(7)   // 5040, malo dulje traje
+// factorial(7)   // 5040, malo dulje traje
 
+*/
