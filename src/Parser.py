@@ -43,9 +43,10 @@ def Lexer(lex):
                 lex >> '='
                 lex >> '>'
                 yield lex.token(T.RELATION_EQUALS)
-            else:
-                lex >> '='
+            elif lex >= '=':
                 yield lex.token(T.FUNCTION_EQUALS)
+            else:
+                yield lex.token(T.DVOTOČKA)
         elif znak.isalpha() or znak == '_':
             lex * {str.isalnum, '_'}
             yield lex.literal_ili(T.IME)
@@ -274,6 +275,8 @@ class P(Parser):
             drugi = self.expression()
             self >> T.UGZATV
             return Call(operator, [prvi, drugi])
+        elif self > T.IF:
+            return self.branch()
         elif self > T.MU:
             return self.minimize(False)
         elif self > T.CARD:
@@ -294,6 +297,20 @@ class P(Parser):
             return Call(ime, argumenti)
         else:
             return ime
+        
+    def branch(self):
+        self >> T.IF
+        self >> T.VOTV
+        uvjeti = [self.expression()]
+        vrijednosti = []
+        while not self > T.VZATV:
+            self >> T.DVOTOČKA
+            vrijednosti.append(self.expression())
+            self >> T.ZAREZ
+            uvjeti.append(self.expression())
+        self >> T.VZATV
+        return Branch(uvjeti, vrijednosti)
+
         
     def minimize(self, otvorena):
         self >> T.MU

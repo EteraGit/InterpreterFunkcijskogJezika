@@ -100,6 +100,20 @@ class Call(AST):
                 return self.parametri[i]
             elif isinstance(parametar, Call):
                 return parametar.find(ime, prev)
+            
+class Branch(AST):
+    def __init__(self, uvjeti, vrijednosti):
+        self.uvjeti = uvjeti
+        self.vrijednosti = vrijednosti
+    
+    def vrijednost(self, memorija, funkcije):
+        for i, uvjet in enumerate(self.uvjeti):
+            if uvjet.vrijednost(memorija, funkcije) and i < len(self.vrijednosti):
+                return self.vrijednosti[i].vrijednost(memorija, funkcije)
+        return self.uvjeti[-1].vrijednost(memorija, funkcije)
+    
+    def izvrši(self, memorija, funkcije):
+        return self.vrijednost(memorija, funkcije)
         
 class Minimize(AST):
     def __init__(self, min_var, inequality, bound, relacija):

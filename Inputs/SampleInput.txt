@@ -10,6 +10,9 @@ sub(x,Sc(y)):=pd(sub(x,y))
 mul(x,0):=0
 mul(x,Sc(y)):=add(x,mul(x,y))
 
+pow(x,0):=1
+pow(x,Sc(y)):=mul(x,pow(x,y))
+
 doubleSub(x,0):=x
 doubleSub(x,Sc(y)):=pd(pd(doubleSub(x,y)))
 
@@ -56,6 +59,17 @@ Zagrade0(x,y,z):<=> !(Greater(x,y) && Greater(y,z)) && (Greater(z,y) && Greater(
 Zagrade1(x,y):<=> Divides(x,y) || (Greater(x,y) && !Equal(x,y)) && !(Prime(x) || Prime(y))
 
 Zagrade2(x,y):<=> (!Prime(nextprime(x)) || nextprime(y)) && !Equal(x,y)
+
+LEQ(x,y):<=> !Greater(x,y)
+
+Grananje(x,y):=if{Greater(x,y):x, [Z(x)+1]}
+
+Grananje(10,5)
+
+Grananje(5,10)
+
+/*
+pow(10,3)
 
 [(mu x <= 10) Greater(x,5) * 2] // 12
 
@@ -165,3 +179,4 @@ RelationWithFunctions(10, 1)    // 0
 
 factorial(7)   // 5040, malo dulje traje
 
+*/

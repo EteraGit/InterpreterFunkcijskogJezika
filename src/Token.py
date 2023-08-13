@@ -1,8 +1,8 @@
 from vepar import *
 
 class T(TipoviTokena):
-    FUNCTION_EQUALS, RELATION_EQUALS, AND, OR, LEQ, MU, NEWLINE = ':=', ':<=>', '&&', '||', '<=', 'mu', '\n'
-    USK, CARD, OOTV, OZATV, VOTV, VZATV, UGOTV, UGZATV, JEDNAKO, ZAREZ, MANJE = '!#(){}[]=,<'
+    FUNCTION_EQUALS, RELATION_EQUALS, AND, OR, LEQ, MU, IF, NEWLINE = ':=', ':<=>', '&&', '||', '<=', 'mu', 'if', '\n'
+    USK, CARD, OOTV, OZATV, VOTV, VZATV, UGOTV, UGZATV, JEDNAKO, ZAREZ, MANJE, DVOTOČKA = '!#(){}[]=,<:'
 
     class BROJ(Token):
         def vrijednost(self, mem, unutar): 
