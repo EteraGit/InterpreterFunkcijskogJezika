@@ -1,11 +1,16 @@
-sys.setrecursionlimit(10000)
+import time
 
-ulaz = pathlib.Path('Inputs/SampleInput.txt').read_text(encoding='utf-8')
+# Record the start time
+start_time = time.time()
 
-# Lexer(ulaz)
+#lekser(ulaz)
+ast = P(ulaz)
+ast.izvrši()
 
-kôd = P(ulaz)
+# Record the end time
+end_time = time.time()
 
-# prikaz(kôd)
+# Calculate the elapsed time
+elapsed_time = end_time - start_time
 
-kôd.izvrši()
+print(f"Execution time: {elapsed_time:.6f} seconds")

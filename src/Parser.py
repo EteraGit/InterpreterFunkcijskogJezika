@@ -1,337 +1,177 @@
 from vepar import *
 from AST import *
 from Token import *
-
-def checkIfLiteral(string, cls):
-    for enum_var in cls:
-        if str(string[-1]) == enum_var.value:
-            return True
-    string = string[:-1]
-    for enum_var in cls:
-        if string == enum_var.value:
-            return True
-    return False
-
-@lexer
-def Lexer(lex):
-    for znak in lex:
-        if znak == '\n':
-            yield lex.token(T.NEWLINE)
-        elif znak.isspace():
-            lex.zanemari()
-        elif znak == '/':
-            if lex >= '/':
-                lex.pročitaj_do('\n')
-                lex.zanemari()
-                yield lex.token(T.NEWLINE)
-            elif lex >= '*':
-                while True:
-                    lex.pročitaj_do('*', više_redova=True)
-                    if lex >= '/':
-                        lex.zanemari()
-                        break
-        elif znak == '&':
-            lex >> '&'
-            yield lex.token(T.AND)
-        elif znak == '|':
-            lex >> '|'
-            yield lex.token(T.OR)
-        elif znak == '<':
-            yield lex.token(T.LEQ if lex >= '=' else T.MANJE)
-        elif znak == ':':
-            if lex >= '<':
-                lex >> '='
-                lex >> '>'
-                yield lex.token(T.RELATION_EQUALS)
-            elif lex >= '=':
-                yield lex.token(T.FUNCTION_EQUALS)
-            else:
-                yield lex.token(T.DVOTOČKA)
-        elif znak.isalpha() or znak == '_':
-            lex * {str.isalnum, '_'}
-            yield lex.literal_ili(T.IME)
-        elif znak.isdecimal():
-            lex.prirodni_broj(znak)
-            yield lex.token(T.BROJ)
-        else:
-            lex * {lambda c: not checkIfLiteral(lex.sadržaj, T) and not c.isalnum() and not c.isspace()}
-            yield lex.literal_ili(T.OP)
-
-"""
-Beskontekstna gramatika:
-
-program -> command | command program
-
-command -> function_definition | infix_definition
-
-function_definition -> IME ( left_parameters ) = expression | IME ( left_parameters ) = left_parameter | Call(IME, right_parameters)
-
-infix_definition -> [left_parameter OP left_parameter] = expression | Call(right_parameter, OP, right_parameter)
-
-left_parameters -> left_parameter | left_parameter , left_parameters
-
-left_parameter -> IME | BROJ | Call(IME, left_parameters)
-
-right_parameters -> right_parameter | right_parameter , right_parameters
-
-right_parameter -> expression
-
-expression -> logical_or
-
-logical_or -> logical_and | logical_and || logical_or
-
-logical_and -> literal | literal && logical_and
-
-literal -> ! literal | (minimize) | (cardinality) | (expression) | term
-
-term -> IME | BROJ | Call(IME, right_parameters) | minimize | cardinality
-
-minimize -> MU (< or <=) term expression | (MU (< or <=) term) expression
-
-cardinality -> CARD (< or <=) term expression | (CARD (< or <=) term) expression
-"""
-
+from Lexer import *
 
 class P(Parser):
-
     def program(self):
-        self.funkcije = Memorija(redefinicija=True)
-        self.define_known_functions()
-        commands = []
+        naredbe = []
         while not self > KRAJ:
-            commands.append(self.command())
-        return Program(commands, self.funkcije)
-
-    def define_known_functions(self):
-        self.funkcije['Z'] = PythonFunction(Token(T.IME, 'Z'), [Token(T.IME, 'x')], lambda x: 0)
-        self.funkcije['Sc'] = PythonFunction(Token(T.IME, 'Sc'), [Token(T.IME, 'x')], lambda x: x + 1)
-        self.funkcije['I'] = PythonFunction(Token(T.IME, 'I'), [Token(T.IME, 'x')], lambda x: x)
-        return nenavedeno
-
-    def command(self):
-        if self >= T.NEWLINE:
-            return nenavedeno
-        elif self > T.UGOTV:
-            return self.infix_definition()
-        else:
-            return self.function_definition()
+            naredbe.append(self.naredba())
+            self >= T.NEWLINE
+        return Program(naredbe)
+    
+    funkcije = ['Z', 'Sc']
+    
+    def naredba(self):
+        if self >= T.NEWLINE: return nenavedeno
+        if self > T.UGOTV: return self.infix()
+        ime = self >> T.IME
+        if ime.sadržaj in self.funkcije or re.match(r'I_\d+', ime.sadržaj): return self.poziv(ime)
+        return self.definicija(ime)
+    
+    def definiraj_i_vrati_funkciju(self, ime, lijeve, izraz):
+        if isinstance(lijeve[-1], Token) and lijeve[-1].sadržaj == '0':
+            assert ime.sadržaj + baseString not in self.funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' je već definirana!'
+            self.funkcije.append(ime.sadržaj + baseString)
+            return Funkcija(Token(T.IME, ime.sadržaj + baseString), lijeve[:-1], izraz)
+        elif isinstance(lijeve[-1], Poziv) and lijeve[-1].ime.sadržaj == 'Sc':
+            assert ime.sadržaj + stepString not in self.funkcije, 'Funkcija ' + ime.sadržaj + stepString + ' je već definirana!'
+            assert ime.sadržaj + baseString in self.funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' nije definirana!'
+            self.funkcije.append(ime.sadržaj + stepString)
+            self.funkcije.append(ime.sadržaj)
+            lijeve.append(Token(T.IME, prevString))
+            return Funkcija(Token(T.IME, ime.sadržaj + stepString), lijeve, izraz)
+        assert ime.sadržaj not in self.funkcije, 'Funkcija ' + ime.sadržaj + ' je već definirana!'
+        self.funkcije.append(ime.sadržaj)
+        return Funkcija(ime, lijeve, izraz)
         
-    def infix_definition(self):
+    def definicija(self, ime):
+        self >> T.OTV
+        lijeve = self.lijeve_varijable()
+        self >> T.ZATV
+        self >> T.DEF_FUN
+        izraz = self.izraz()
+        return self.definiraj_i_vrati_funkciju(ime, lijeve, izraz)
+
+    def infix(self):
         self >> T.UGOTV
-        prvi, drugi, operator, izraz = None, None, None, None
-        if ime := self >= T.IME:            # ako smo procitali ime, onda su 2 slucaja
-            if ime not in self.funkcije:    # ako smo procitali varijablu, onda je to definicija infix funkcije
-                prvi = self.left_function_call_or_name(ime)
-                operator = self >> T.OP
-                drugi = self.left_parameter()
+        prvi, operator, drugi, izraz = None, None, None, None
+        if ime := self >= T.IME:
+            if self > T.OTV:        # lijevi parametar infix funkcije je poziv, pa je ovo poziv infix funkcije
+                return self.poziv_infix(lijevi=ime)
+            else:       # lijevi parametar infix funkcije je ime, pa je ovo definicija infix funkcije
+                prvi = ime
+                operator = Token(T.IME, (self >> T.OP).sadržaj)
+                drugi = self.lijeva_varijabla()
                 self >> T.UGZATV
-                self >> {T.FUNCTION_EQUALS, T.JEDNAKO}
-                izraz = self.right_parameter()
-            else:                           # ako smo procitali funkciju, onda je to poziv infix funkcije           
-                prvi = self.right_function_call_or_name(ime)
-                operator = self >> T.OP
-                drugi = self.right_parameter()
-        else:                               # ako nismo procitali ime, onda je to poziv infix funkcije
-            prvi = self.right_parameter()
-            operator = self >> T.OP
-            drugi = self.right_parameter()
-        if izraz is None:                   # u svakom slucaju osim definicije infix funkcije
-            self >> T.UGZATV
-            if self >= T.NEWLINE:
-                return Call(operator, [prvi, drugi])
-            self >> {T.FUNCTION_EQUALS, T.JEDNAKO}
-            izraz = self.expression()
-        self >> T.NEWLINE
-
-        if isinstance(drugi, Token) and drugi.sadržaj == '0':
-            baseIme = Token(T.IME, operator.sadržaj + baseString)
-            if baseIme not in self.funkcije:
-                function = Function(baseIme, [prvi, drugi], izraz)
-                self.funkcije[baseIme] = function
-                return function
-        elif isinstance(drugi, Call) and drugi.ime.sadržaj == 'Sc':
-            stepIme = Token(T.IME, operator.sadržaj + stepString)
-            if stepIme not in self.funkcije:
-                parametri = [prvi, drugi]
-                self.funkcije[operator] = Function(operator, parametri, izraz)
-                parametri.append(Token(T.IME, '#prev'))
-                function = Function(stepIme, parametri, izraz)
-                self.funkcije[stepIme] = function
-                return function
-        infix = Function(operator, [prvi, drugi], izraz)
-        self.funkcije[operator] = infix
-        return infix
-    
-    def function_definition(self):
-        ime = 'default'
-        if self >= T.VOTV:
-            ime = self >> T.IME
-            self >> T.VZATV
-        else:
-            ime = self >> T.IME  
-        if ime in self.funkcije:
-            parametri = self.right_parameters()
-            call = Call(ime, parametri)
-            self >> T.NEWLINE
-            return call
-        parametri = self.left_parameters()
-        self >> {T.FUNCTION_EQUALS, T.RELATION_EQUALS, T.JEDNAKO}
-        izraz = self.right_parameter()
-        self >> T.NEWLINE
-
-        if isinstance(parametri[-1], Token) and parametri[-1].sadržaj == '0':
-            baseIme = Token(T.IME, ime.sadržaj + baseString)
-            if baseIme not in self.funkcije:
-                function = Function(baseIme, parametri, izraz)
-                self.funkcije[baseIme] = function
-                return function
-        elif isinstance(parametri[-1], Call) and parametri[-1].ime.sadržaj == 'Sc':
-            stepIme = Token(T.IME, ime.sadržaj + stepString)
-            if stepIme not in self.funkcije:
-                self.funkcije[ime] = Function(ime, parametri, izraz)
-                parametri.append(Token(T.IME, '#prev'))
-                function = Function(stepIme, parametri, izraz)
-                self.funkcije[stepIme] = function
-                return function
-        function = Function(ime, parametri, izraz)
-        self.funkcije[ime] = function
-        return function
-    
-    def left_parameters(self):
-        self >> T.OOTV
-        if self >= T.OZATV:
-            return []
-        parametri = [self.left_parameter()]
+                self >> T.DEF_FUN
+                izraz = self.izraz()
+                return self.definiraj_i_vrati_funkciju(operator, [prvi, drugi], izraz)
+        else:       # lijevi parametar infix funkcije ne počinje s imenom (nego npr. s otvorenom zagradom), pa je ovo poziv infix funkcije
+            return self.poziv_infix(lijevi=None)
+        
+    def lijeve_varijable(self):
+        lijeve = [self.lijeva_varijabla()]
         while self >= T.ZAREZ:
-            parametri.append(self.left_parameter())
-        self >> T.OZATV
-        return parametri
-
-    def left_parameter(self):
+            lijeve.append(self.lijeva_varijabla())
+        return lijeve
+    
+    def lijeva_varijabla(self):
         if ime := self >= T.IME:
-            return self.left_function_call_or_name(ime)
-        elif broj := self >= T.BROJ:
-            return broj
-        elif self >= T.UGOTV:
-            prvi = self.left_parameter()
-            operator = self >> T.OP
-            drugi = self.left_parameter()
-            self >> T.UGZATV
-            return Call(operator, [prvi, drugi])
-        else:
-            return nenavedeno
-        
-    def right_parameters(self):
-        self >> T.OOTV
-        if self >= T.OZATV:
-            return []
-        parametri = [self.right_parameter()]
+            if self > T.OTV:
+                assert ime.sadržaj == 'Sc', 'Jedini poziv funkcije koji smije biti lijeva varijabla je Sc!'
+                return self.poziv_lijeve(ime)
+            return ime
+        broj = self >> T.BROJ
+        assert broj.sadržaj == '0', 'Jedini broj koji smije biti lijeva varijabla je 0!'
+        return broj
+    
+    def poziv_lijeve(self, ime):
+        self >> T.OTV
+        assert not self > T.ZATV, 'Funkcije s 0 argumenata nisu podržane!'
+        varijabla = self >> T.IME
+        self >> T.ZATV
+        return Poziv(ime, [varijabla])
+    
+    def poziv_infix(self, lijevi):
+        if lijevi is None: lijevi = self.izraz()
+        else: lijevi = self.poziv(lijevi)
+        operator = Token(T.IME, (self >> T.OP).sadržaj)
+        desni = self.izraz()
+        self >> T.UGZATV
+        return Poziv(operator, [lijevi, desni])
+    
+    def poziv(self, ime):
+        self >> T.OTV
+        assert not self > T.ZATV, 'Funkcije s 0 argumenata nisu podržane!'
+        desne = self.desne_varijable()
+        self >> T.ZATV
+        return Poziv(ime, desne)
+    
+    def desne_varijable(self):
+        desne = [self.izraz()]
         while self >= T.ZAREZ:
-            parametri.append(self.right_parameter())
-        self >> T.OZATV
-        return parametri
-        
-    def right_parameter(self):
-        return self.expression()  
-        
-    def expression(self):
-        return self.logical_OR()
+            desne.append(self.izraz())
+        return desne
     
-    def logical_OR(self):
-        ands = [self.logical_AND()]
-        while self >= T.OR:
-            ands.append(self.logical_AND())
-        return Logical_OR.ili_samo(ands)
+    def izraz(self):
+        return self.log_ILI()
     
-    def logical_AND(self):
-        literali = [self.literal()]
-        while self >= T.AND:
-            literali.append(self.literal())
-        return Logical_AND.ili_samo(literali)
-          
-    def literal(self):
-        if self >= T.USK:
-            literal = Logical_NOT(self.literal())
-            return literal
-        elif self >= T.OOTV:
-            if self > T.MU:
-                return self.minimize(True)
-            elif self > T.CARD:
-                return self.cardinality(True)
-            logical_or = self.expression()
-            self >> T.OZATV
-            return logical_or
-        else:
-            return self.term()
+    def log_ILI(self):
+        disjunkcija = [self.log_I()]
+        while self >= T.LOG_ILI: disjunkcija.append(self.log_I())
+        return Log_ILI.ili_samo(disjunkcija)
     
-    def term(self):
+    def log_I(self):
+        konjunkcija = [self.log_literal()]
+        while self >= T.LOG_I: konjunkcija.append(self.log_literal())
+        return Log_I.ili_samo(konjunkcija)
+    
+    def log_literal(self):
+        if self >= T.LOG_NE: return Log_NE(self.log_literal())
+        elif self >= T.OTV:
+            if self > T.MU: return self.minimizacija(otvorena=True)
+            if self > T.CARD: return self.brojeća(otvorena=True)
+            izraz = self.izraz()
+            self >> T.ZATV
+            return izraz
+        else: return self.list()
+    
+    def list(self):
         if ime := self >= T.IME:
-            return self.right_function_call_or_name(ime)
-        elif broj := self >= T.BROJ:
-            return broj
-        elif self >= T.UGOTV:
-            prvi = self.expression()
-            operator = self >> T.OP
-            drugi = self.expression()
-            self >> T.UGZATV
-            return Call(operator, [prvi, drugi])
-        elif self > T.IF:
-            return self.branch()
-        elif self > T.MU:
-            return self.minimize(False)
-        elif self > T.CARD:
-            return self.cardinality(False)
-        else:
-            return nenavedeno
-        
-    def left_function_call_or_name(self, ime):
-        if self > T.OOTV:
-            argumenti = self.left_parameters()
-            return Call(ime, argumenti)
-        else:
+            if self > T.OTV:
+                return self.poziv(ime)
             return ime
-        
-    def right_function_call_or_name(self, ime):
-        if self > T.OOTV:
-            argumenti = self.right_parameters()
-            return Call(ime, argumenti)
+        if self > T.MU: return self.minimizacija(otvorena=False)
+        if self > T.CARD: return self.brojeća(otvorena=False)
+        if self > T.IF: return self.grananje()
+        if self >= T.UGOTV: return self.poziv_infix(lijevi=None)
+        return self >> T.BROJ
+    
+    def minimizacija(self, otvorena):
+        self >> T.MU
+        varijabla = self >> T.IME
+        if nejednakost := self >= {T.MJEDNAKO, T.MANJE}:
+            plus = 1 if nejednakost.sadržaj == '<=' else 0
+            ograda = self.list()
+            if otvorena: self >> T.ZATV
+            relacija = self.izraz()
+            return Ograničena_Minimizacija(varijabla, plus, ograda, relacija)
         else:
-            return ime
+            if otvorena: self >> T.ZATV
+            relacija = self.izraz()
+            return Neograničena_Minimizacija(varijabla, relacija)
         
-    def branch(self):
+    def brojeća(self, otvorena):
+        self >> T.CARD
+        varijabla = self >> T.IME
+        nejednakost = self >> {T.MJEDNAKO, T.MANJE}
+        plus = 1 if nejednakost.sadržaj == '<=' else 0
+        ograda = self.list()
+        if otvorena: self >> T.ZATV
+        relacija = self.izraz()
+        return Brojeća(varijabla, plus, ograda, relacija)
+    
+    def grananje(self):
         self >> T.IF
         self >> T.VOTV
-        uvjeti = [self.expression()]
+        uvjeti = [self.izraz()]
         vrijednosti = []
-        while not self > T.VZATV:
+        while not self >= T.VZATV:
             self >> T.DVOTOČKA
-            vrijednosti.append(self.expression())
+            vrijednosti.append(self.izraz())
             self >> T.ZAREZ
-            uvjeti.append(self.expression())
-        self >> T.VZATV
-        return Branch(uvjeti, vrijednosti)
-
-        
-    def minimize(self, otvorena):
-        self >> T.MU
-        min_var = self >> T.IME
-        inequality = None
-        bound = None
-        if inequality := self >= {T.MANJE, T.LEQ}:
-            bound = self.term()
-        if otvorena:
-            self >> T.OZATV
-        relacija = self.expression()
-        return Minimize(min_var, inequality, bound, relacija)
-    
-    def cardinality(self, otvorena):
-        self >> T.CARD
-        card_var = self >> T.IME
-        inequality = self >> {T.MANJE, T.LEQ}
-        bound = self.term()
-        if otvorena:
-            self >> T.OZATV
-        relacija = self.expression()
-        return Cardinality(card_var, inequality, bound, relacija)
-
+            uvjeti.append(self.izraz())
+        return Grananje(uvjeti, vrijednosti)
 

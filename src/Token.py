@@ -1,31 +1,14 @@
 from vepar import *
 
 class T(TipoviTokena):
-    FUNCTION_EQUALS, RELATION_EQUALS, AND, OR, LEQ, MU, IF, NEWLINE = ':=', ':<=>', '&&', '||', '<=', 'mu', 'if', '\n'
-    USK, CARD, OOTV, OZATV, VOTV, VZATV, UGOTV, UGZATV, JEDNAKO, ZAREZ, MANJE, DVOTOČKA = '!#(){}[]=,<:'
-
-    class BROJ(Token):
-        def vrijednost(self, mem, unutar): 
-            return int(self.sadržaj)
-        def izvrši(self, mem, unutar):
-            return int(self.sadržaj)
-        def izvršiStep(self, ime, prev, mem, unutar):
-            return int(self.sadržaj)
-
+    DEF_FUN, NEWLINE, LOG_ILI, LOG_I, MU, IF, MJEDNAKO = ':=', '\n', '||', '&&', 'mu', 'if', '<='
+    OTV, ZATV, ZAREZ, LOG_NE, CARD, MANJE, VOTV, VZATV, UGOTV, UGZATV, DVOTOČKA = '(),!#<{}[]:'
     class IME(Token):
-        def vrijednost(self, mem, unutar): 
-            return mem[self]
-        def izvrši(self, mem, unutar):
-            return mem[self]
-        def izvršiStep(self, ime, prev, mem, unutar):
-            return mem[self]
-        
+        def izvrši(self, memorija, funkcije):
+            return memorija[self]
+    class BROJ(Token):
+        def izvrši(self, memorija, funkcije):
+            return int(self.sadržaj)
     class OP(Token):
-        def vrijednost(self, mem, unutar): 
-            return self
-        def izvrši(self, mem, unutar):
-            return self
-        def izvršiStep(self, ime, prev, mem, unutar):
-            return self
-        
-      
+        def izvrši(self, memorija, funkcije):
+            return str(self.sadržaj)

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interpreter</title>
+    <link rel="stylesheet" href="styles.css">
+    <script type="text/javascript" async
+        src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+    </script>
+</head>
+<body>
+    <script>
+        MathJax.Hub.Config({
+            tex2jax: {
+            inlineMath: [['\\(', '\\)']],
+            displayMath: [['\\[', '\\]']],
+            processEscapes: true,
+            },
+            "HTML-CSS": { fonts: ["TeX"] },
+            showProcessingMessages: false,
+            messageStyle: "none"
+        });
+    </script>
+    <header>
+        <h1>Interpreter za parcijalno rekurzivne funkcije</h1>
+    </header>
+    <div class="container">
+        <nav>
+            <h2>Sadržaj</h2>
+            <ul>
+                <li><a href="#section1">Osnovne mogućnosti s funkcijama</a></li>
+                <li><a href="#section2">Relacije</a></li>
+                <li><a href="#section3">Logički izrazi</a></li>
+                <li><a href="#section4">Listovi</a></li>
+                <li><a href="#section5">Kompleksniji primjeri</a></li>
+            </ul>
+        </nav>
+        <section id="section1">
+            <h2>Osnovne mogućnosti</h2>
+            <p>Na početku rada, interpreter prepoznaje samo inicijalne funkcije.</p>
+            <pre>
+<code>
+/* višelinijski
+komentar */
+// jednolinijski komentar
+
+Z(5) // 0
+Sc(7) // 8
+Sc(I(Z(6))) // 1 
+</code>
+            </pre>
+            <p>Svaka naredba se piše u svom retku. Gornje naredbe predstavljaju <b>pozive</b> funkcija --- one će rezultirati
+            ispisom rezultata u konzolu.</p>
+            <p>Kompliciranije funkcije možemo definirati na dva načina: <b>primitivnom rekurzijom</b> ili <b>direktnom definicijom</b>.</p>
+            <h3>Primitivna rekurzija</h3>
+            <p>Kod definicije bilo koje nove funkcije, potrebno je paziti da je interpreteru poznata čitava desna strana jednakosti.
+               Drugim riječima, sve funkcije (ili relacije) koje se pojavljuju na desnoj strani neke jednakosti moraju biti definirane iznad
+               (osim ako su inicijalne). Pogledajmo kako se definira zbrajanje i množenje (primitivnom rekurzijom) u skladu s ovim pravilom.
+            </p>
+            <pre>
+<code>
+add(x,0) := x  // početni uvjet
+add(x,Sc(y)) := Sc(add(x,y))  // korak
+
+add(2,add(1,1))  // 4
+
+mul(x,0) := 0
+mul(x,Sc(y)) := add(x,mul(x,y))  // možemo koristiti funkciju <i>add</i> jer je definirana iznad
+
+mul(add(2,3),mul(2,2))  // 20
+</code>
+            </pre>
+        <p>Kao što vidimo, jednakost pišemo s <b>:=</b> kako bismo naglasili da definiramo novu funkciju.</p>
+        <h3>Direktna definicija</h3>
+        <p>Nove funkcije možemo direktno definirati <i>po točkama</i>, bez korištenja primitivne rekurzije:</p>
+        <pre>
+<code>
+f(x,y) := add(mul(3,x), Sc(y))  // f(x,y) = 3x + (y + 1)
+g(x) := f(x,0)  // g(x) = 3x + 1
+
+f(2,3)  // 10
+g(2)  // 7
+</code>
+        </pre>
+        </section>
+        <section id="section2">
+            <h2>Relacije</h2>
+            <p>U čitavom interpreteru ne pravimo bitnu razliku između funkcija i relacija. Naime, relacije smatramo
+                funkcijama s kodomenom \(\{0,1\}\). Oznaka za definiciju nove relacije je <b>:<=></b> (ali zbog sličnosti s funkcijama
+                može se pisati i <b>:=</b>). Pogledajmo kako se definira jednostavna relacija \(>\).</p>
+            </p>
+            <pre>
+<code>
+Positive(0) := 0
+Positive(Sc(x)) := 1
+    
+Greater(x,y) :<=> Positive(sub(x,y))
+
+Greater(2,3)  // 0
+Greater(3,2)  // 1
+Greater(2,2)  // 0
+</code>
+            </pre>
+        <p>Prvo smo primitivnom rekurzijom definirali <b>Positive</b> --- karakterističnu funkciju skupa \(\mathbb{N}_+\). Zatim smo 
+            definirali relaciju <b>Greater</b> kompozicijom Positive i oduzimanja. Primijetimo da je \(\texttt{Greater(x,y)}\) uvijek 0 ili 1,
+            za bilo koje \(x,y \in \mathbb{N}\).
+        </p>
+        </section>
+        <section id="section3">
+            <h2>Logički izrazi</h2>
+            <p>U interpreteru možemo pisati i logičke izraze kako bismo definirali nove funkcije ili relacije. Podržane logičke operacije su konjunkcija <b>&&</b>,
+                disjunkcija <b>||</b> i negacija <b>!</b>. Logički izraz se parsira po standardnim prioritetima operatora --- zagrade imaju najveći prioritet,
+                a redom ih slijede negacija, konjunkcija i disjunkcija. Pogledajmo kako se definira relacija <b>Equal</b> koja je istinita ako su dva broja jednaka.
+            </p>
+            <pre>
+<code>
+Equal(x,y):<=>!Greater(x,y) && !Greater(y,x)
+
+Equal(2,3)  // 0
+Equal(3,3)  // 1
+</code>
+            </pre>
+        <p>Unutar logičkog izraza možemo staviti nešto čija vrijednost nije nužno element skupa \(\{0,1\}\) (npr. poziv neke funkcije). U tom slučaju pretpostavljamo da je 0 laž, a bilo koji drugi prirodan
+            broj istina (odnosno jednak 1). To uvelike širi opseg izraza koji se mogu parsirati, pa su mogući i ovakvi izrazi:
+        </p>
+        <pre>
+<code>
+Custom(x,y) :<=> !Greater(y,x) && Divides(y,x) || Equal(x,y)
+GreaterAndRightAtLeastTwo(x,y) :<=> sub(x,y) && pd(y) && 42
+
+Custom(10,2) // 1, jer je negacija od 2 > 10 istinita, i 2 dijeli 10
+GreaterAndRightAtLeastTwo(3,2) // 1, jer 3 - 2 > 0, 2 - 1 > 0 i 42 > 0
+GreaterAndRightAtLeastTwo(2,1) // 0, jer 2 - 1 > 0 i 42 > 0, ali 1 - 1 = 0
+</code>
+        </pre>
+        </section>
+        <section id="section4">
+            <h2>Listovi</h2>
+            <p><i>Listovi</i> u apstraktnom sintaksnom stablu predstavljaju osnovne gradivne jedinice programa koje samostalno imaju neko (semantičko) značenje. Kako bismo razumjeli ulogu listova, pogledajmo izraz
+            \(f(L_1,L_2)\). Izraze \(L_1\) i \(L_2\) nazivamo listovima jer se očito nalaze na iznimno važnom mjestu u kodu --- argumenti su funkcije \(f\).
+            Pogledajmo koje su sve vrste listova podržane (odnosno čemu sve smiju biti jednaki \(L_1\) i \(L_2\)):
+            </p>
+            <ul>
+                <li>Brojevi</li>
+                <li>Pozivi funkcija ili relacija</li>
+                <li>Minimizacija</li>
+                <li>Brojeća funkcija</li>
+                <li>Grananje</li>
+                <li>Infiksni operatori</li>
+              </ul>
+            <h3>Minimizacija</h3>
+            <p>Funkciju možemo definirati <i>minimizacijom</i> uz pomoć ključne riječi \(\texttt{mu}\). Minimizacija može biti
+            <i>ograničena</i> (operatorima \(<\) ili \(\leq\)) ili <i>neograničena</i>.</p> Pogledajmo nekoliko primjera:
+            <pre>
+<code>
+SpecialSc(x) := (mu z) Greater(z,x)  // najmanji broj veći od x 
+div(x,y) := pd((mu z <= x) Greater(mul(z,y),x))  // cjelobrojno dijeljenje
+
+SpecialSc(5)  // 6
+div(10,3)  // 3
+</code>
+            </pre>
+        <p>Primijetimo da je, u prethodnom primjeru, čitav izraz \(\texttt{(mu z <= x) Greater(mul(z,y),x)}\) jedan <i>list</i>,
+            iako se sastoji od više drugih listova. Ovo je u skladu s time da je list osnovna gradivna jedinica programa koja ima neko značenje.
+            Primjerice, \(\texttt{(mu z <= x)}\) <b>nije list</b>, jer sama oznaka za minimizaciju nema značenje bez pripadne relacije --- ona je samo dio sintakse.
+        </p>
+        <h3>Brojeća funkcija</h3>
+        <p>Sintaksa za brojeću funkciju je vrlo slična minimizaciji, ali sada zahtijevamo da postoji gornja granica do koje brojimo.</p>
+        <pre>
+<code>
+Prime(p) :<=> Equal((#d <= p) Divides(d,p),2)
+
+Prime(5)  // 1
+Prime(6)  // 0
+</code>
+        </pre>
+        <p>Napomenimo da minimizacija i brojeća funkcija rade i <b>bez zagrada</b>, odnosno moguće je pisati
+        \(\texttt{mu z <= x}\) umjesto \(\texttt{(mu z <= x)}\).
+        </p>        
+        <h3>Grananje</h3>
+        <p>Funkciju možemo definirati grananjem kao u sljedećem primjeru:</p>
+        <pre>
+<code>
+h(x,y) := if{Greater(x,y) : 0, Grananje(y,x) : 1, add(x,y)}
+
+h(3,2)  // 0
+h(2,3)  // 1
+h(2,2)  // 4
+</code>
+        </pre>
+    <p>Uvjeti s lijeve strane znakova \(\texttt{:}\) se provjeravaju redom, a vrijednost izraza \(\texttt{if}\{\ldots\}\) je jednaka
+        vrijednosti s desne strane prvog zadovoljenog uvjeta. Ukoliko niti jedan uvjet nije zadovoljen, vrijednost izraza je dana
+        nakon zadnjeg zareza (\(\texttt{else}\) uvjet). U skladu s prijašnjim napomenama, uvjeti ne moraju biti relacije --- mogu biti bilo koji listovi.
+    </p>
+
+    <h3>Infiksni operatori</h3>
+    <p>Kako bismo olakšali korištenje interpretera i izbjegli ugnježđivanje poziva funkcija unedogled, uvodimo infiksne operatore. Njih
+        možemo definirati da se <i>ponašaju</i> kao bilo koja druga funkcija, a možemo ih definirati i primitivnom rekurzijom. Pišemo
+        ih unutar uglatih zagrada, a operatori unutar njih mogu biti bilo koji nizovi specijalnih znakova.
+    </p>
+    <pre>
+<code>
+[x - y] := sub(x,y)
+[x ** y] := mul(x,y)  // operator se može sastojati od više znakova
+
+[x + 0] := x
+[x + Sc(y)] := Sc([x + y])
+
+[5 - 2]  // 3
+[2 ** 3]  // 6
+[2 + 3]  // 5
+[2 + [3 ** add(3,1)]]  // 14
+</code>
+    </pre>
+</section>
+<section id="section5">
+    <h2>Kompleksniji primjeri</h2>
+    <p>Za kraj pokazujemo razne primjere koji kombiniraju sve što smo iznad pojasnili.</p>
+    <pre>
+<code>
+factorial(0) := 1
+factorial(Sc(n)) := mul(Sc(n),factorial(n))
+
+nextprime(p) := (mu q <= mul(p,2))(Prime(q) && Greater(q,p))
+
+Zagrade(x,y,z) :<=> !(Greater(x,y) && Greater(y,z)) && (Greater(z,y) && Greater(y,x))
+
+k(x) := (mu y) Z(y)  // parcijalno rekurzivna funkcija čije računanje nikad ne stane
+
+Grananje(x,y) := if{k(x) : 4, [Z(x)+1]}
+
+[[add(10,[2+3]) ** [0 - 2]] + [[7 ** nextprime(6)] - 12]]  // 37
+Zagrade(5,6,7)  // 1
+factorial(7)  // 5040, ali se dugo računa
+Grananje(2,3)  // računanje nikad ne stane jer ovisi o funkciji k
+</code>
+    </pre>
+</section>
+
+    </div>
+</body>
+</html>

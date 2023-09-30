@@ -1,81 +1,81 @@
-add(x,0):=x
-add(x,Sc(y)):=Sc(add(x,y))
+add(x,0) := x
+add(x,Sc(y)) := Sc(add(x,y))
 
-pd(0):=0
-pd(Sc(y)):=y
+pd(0) := 0
+pd(Sc(y)) := y
 
-sub(x,0):=x
-sub(x,Sc(y)):=pd(sub(x,y))
+sub(x,0) := x
+sub(x,Sc(y)) := pd(sub(x,y))
 
-mul(x,0):=0
-mul(x,Sc(y)):=add(x,mul(x,y))
+mul(x,0) := 0
+mul(x,Sc(y)) := add(x,mul(x,y))
 
-pow(x,0):=1
-pow(x,Sc(y)):=mul(x,pow(x,y))
+factorial(0) := 1
+factorial(Sc(n)) := mul(Sc(n),factorial(n))
 
-doubleSub(x,0):=x
-doubleSub(x,Sc(y)):=pd(pd(doubleSub(x,y)))
+pow(x,0) := 1
+pow(x,Sc(y)) := mul(x,pow(x,y))
 
-[x+0]:=x
-[x+Sc(y)]:=Sc([x+y])
+doubleSub(x,0) := x
+doubleSub(x,Sc(y)) := pd(pd(doubleSub(x,y)))
 
-[x--y]:=sub(x,y)
+[x + 0] := x
+[x + Sc(y)] := Sc([x+y])
 
-[x*0]:=0
-[x*Sc(y)]:=[x+[x*y]]
+[x -- y] := sub(x,y)
 
-f(x,y):=add(Sc(Sc(x)),y)
+[x * 0] := 0
+[x * Sc(y)] := [x + [x * y]]
 
-g(x,y):=add(sub(x,y), y)
+f(x,y) := add(Sc(Sc(x)),y)
 
-h(x,y,z):=mul(Sc(z), sub(x,y))
+g(x,y) := add(sub(x,y), y)
 
-factorial(0):=1
-factorial(Sc(n)):=mul(Sc(n),factorial(n))
+h(x,y,z) := mul(Sc(z), sub(x,y))
 
-Positive(0):=0
-Positive(Sc(x)):=1
 
-Greater(x,y):<=>Positive(sub(x,y))
+Positive(0) := 0
+Positive(Sc(x)) := 1
 
-div(x,y):=pd((mu z <= x)Greater(mul(z,y),x))
+Greater(x,y) := Positive(sub(x,y))
 
-mod(x,y):=sub(x,mul(y,div(x,y)))   // (x-(y*(x//y)))
+div(x,y) := pd((mu z <= x)Greater(mul(z,y),x))
 
-Equal(x,y):<=>!Greater(x,y) && !Greater(y,x)
+mod(x,y) := sub(x,mul(y,div(x,y)))   // (x-(y*(x//y)))
 
-Divides(x,y):<=>Equal(mod(y,x),Z(x))  // moze i Equal(mod(x,y),0)
+Equal(x,y) := !Greater(x,y) && !Greater(y,x)
 
-Prime(p):<=>Equal((#d<=p)Divides(d,p), 2)
+Divides(x,y) := Equal(mod(y,x),Z(x))  // moze i Equal(mod(x,y),0)
 
-nextprime(p):=(mu q <= mul(p,2))(Prime(q) && Greater(q,p))  // eventualno AND(...)
+Prime(p) := Equal((#d<=p)Divides(d,p), 2)
 
-CustomRelation(x,y):<=> !Greater(y,x) && Divides(y,x) || Equal(x,y)
+nextprime(p) := (mu q <= mul(p,2))(Prime(q) && Greater(q,p)) 
 
-RelationWithFunctions(x,y):<=> sub(x,y) && pd(y)
+CustomRelation(x,y) :=  !Greater(y,x) && Divides(y,x) || Equal(x,y)
 
-Zagrade0(x,y,z):<=> !(Greater(x,y) && Greater(y,z)) && (Greater(z,y) && Greater(y,x))
+RelationWithFunctions(x,y) :=  sub(x,y) && pd(y)
 
-Zagrade1(x,y):<=> Divides(x,y) || (Greater(x,y) && !Equal(x,y)) && !(Prime(x) || Prime(y))
+Zagrade0(x,y,z) :=  !(Greater(x,y) && Greater(y,z)) && (Greater(z,y) && Greater(y,x))
 
-Zagrade2(x,y):<=> (!Prime(nextprime(x)) || nextprime(y)) && !Equal(x,y)
+Zagrade1(x,y) :=  Divides(x,y) || (Greater(x,y) && !Equal(x,y)) && !(Prime(x) || Prime(y))
 
-LEQ(x,y):<=> !Greater(x,y)
+Zagrade2(x,y) :=  (!Prime(nextprime(x)) || nextprime(y)) && !Equal(x,y)
 
-Grananje(x,y):=if{Greater(x,y):x, [Z(x)+1]}
+LEQ(x,y) :=  !Greater(x,y)
 
-Grananje(10,5)
+k(x) := (mu y) (Greater(x,y) && !Equal(x,y))
 
-Grananje(5,10)
+Grananje(x,y) := if{k(x):k(x), [Z(x)+1]}
 
-/*
+Z(0)
+
 pow(10,3)
 
 [(mu x <= 10) Greater(x,5) * 2] // 12
 
 nextprime(11) // 13
 
-[add(10, 5) * [3 -- 1]]  // 30
+[add(10,5) * [3 -- 1]]  // 30
 
 [10 + [[5 -- 2] * 7]]  // 31
 
@@ -178,5 +178,3 @@ RelationWithFunctions(10, 2)    // 1
 RelationWithFunctions(10, 1)    // 0
 
 factorial(7)   // 5040, malo dulje traje
-
-*/

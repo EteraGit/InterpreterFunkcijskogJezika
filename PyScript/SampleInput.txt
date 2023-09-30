@@ -165,6 +165,6 @@ doubleSub(10, 2)    // 6
 RelationWithFunctions(10, 2)    // 1
 RelationWithFunctions(10, 1)    // 0
 
-// factorial(7)   // 5040, malo dulje traje
+factorial(7)   // 5040, malo dulje traje
 
 */
