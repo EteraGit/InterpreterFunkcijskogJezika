@@ -27,12 +27,11 @@ doubleSub(x,Sc(y)) := pd(pd(doubleSub(x,y)))
 [x * 0] := 0
 [x * Sc(y)] := [x + [x * y]]
 
-f(x,y) := add(Sc(Sc(x)),y)
+f(x,y) := [[y + y] * x]
 
 g(x,y) := add(sub(x,y), y)
 
 h(x,y,z) := mul(Sc(z), sub(x,y))
-
 
 Positive(0) := 0
 Positive(Sc(x)) := 1
@@ -67,7 +66,7 @@ k(x) := (mu y) (Greater(x,y) && !Equal(x,y))
 
 Grananje(x,y) := if{k(x):k(x), [Z(x)+1]}
 
-Z(0)
+[I_0(2, 4, 5) * 7]
 
 pow(10,3)
 

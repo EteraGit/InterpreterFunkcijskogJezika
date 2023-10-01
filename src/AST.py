@@ -16,6 +16,8 @@ class I:
     def __init__(self, n):
         self.n = n
     def __call__(self, *x):
+        assert self.n > 0, 'Indeks koordinatne projekcije I_' + str(self.n) + ' mora biti pozitivan!'
+        assert self.n <= len(x), 'Mjesnost (' + str(len(x)) + ') koordinatne projekcije je manja od njenog indeksa ' + str(self.n) + '!'
         return x[self.n - 1]
             
 class Program(AST):
@@ -51,6 +53,7 @@ class Funkcija(AST):
             funkcije[ime] = Funkcija(ime, self.parametri[:-1], self.izraz)
             if isinstance(funkcije[self.ime].parametri[-2], Poziv): self.parametri[-2] = self.parametri[-2].parametri[0]
             if isinstance(funkcije[self.ime].izraz, Poziv): funkcije[self.ime].izraz.zamijeni(ime, funkcije)
+        self.provjeri_parametre()
     
     def pozovi(self, argumenti, memorija, funkcije):
         assert len(self.parametri) == len(argumenti), 'Funkcija ' + self.ime.sadržaj + ' je mjesnosti ' + str(len(self.parametri)) + ', a ne ' + str(len(argumenti)) + '!'
@@ -65,6 +68,12 @@ class Funkcija(AST):
                 z = funkcije[self.ime.sadržaj + stepString].pozovi(args, memorija, funkcije)
             return z
         return self.izraz.izvrši(Memorija(zip(self.parametri, argumenti)), funkcije)
+    
+    def provjeri_parametre(self):
+        viđeni = set()
+        for param in self.parametri:
+            assert param not in viđeni, 'Funkcija ' + self.ime.sadržaj + ' ima više parametara s istim imenom ' + param.sadržaj + '!'
+            viđeni.add(param)
     
 
 class Poziv(AST):

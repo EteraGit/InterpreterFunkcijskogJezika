@@ -58,7 +58,7 @@ class P(Parser):
                 self >> T.DEF_FUN
                 izraz = self.izraz()
                 return self.definiraj_i_vrati_funkciju(operator, [prvi, drugi], izraz)
-        else:       # lijevi parametar infix funkcije ne počinje s imenom (nego npr. s otvorenom zagradom), pa je ovo poziv infix funkcije
+        else:       # lijevi parametar infix funkcije ne počinje s imenom (nego npr. s otvorenom zagradom ili brojem), pa je ovo poziv infix funkcije
             return self.poziv_infix(lijevi=None)
         
     def lijeve_varijable(self):
@@ -97,6 +97,7 @@ class P(Parser):
         assert not self > T.ZATV, 'Funkcije s 0 argumenata nisu podržane!'
         desne = self.desne_varijable()
         self >> T.ZATV
+        assert not self > T.DEF_FUN, 'Nedozvoljena redefinicija funkcije ' + ime.sadržaj + '!'
         return Poziv(ime, desne)
     
     def desne_varijable(self):
