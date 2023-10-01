@@ -66,7 +66,7 @@ k(x) := (mu y) (Greater(x,y) && !Equal(x,y))
 
 Grananje(x,y) := if{k(x):k(x), [Z(x)+1]}
 
-[I_0(2, 4, 5) * 7]
+[I_1(2, 4, 5) * 7]
 
 pow(10,3)
 

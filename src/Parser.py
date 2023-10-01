@@ -1,7 +1,7 @@
 from vepar import *
 from AST import *
 from Token import *
-from Lexer import *
+from Lekser import *
 
 class P(Parser):
     def program(self):
