@@ -3,40 +3,51 @@ from AST import *
 from Token import *
 from Lekser import *
 
+funkcije = ['Z', 'Sc']
+
 class P(Parser):
-    def program(self):
-        naredbe = []
-        while not self > KRAJ:
-            naredbe.append(self.naredba())
-            self >= T.NEWLINE
-        return Program(naredbe)
-    
-    funkcije = ['Z', 'Sc']
+    trenutna: str
     
     def naredba(self):
-        if self >= T.NEWLINE: return nenavedeno
-        if self > T.UGOTV: return self.infix()
-        ime = self >> T.IME
-        if ime.sadržaj in self.funkcije or re.match(r'I_\d+', ime.sadržaj): return self.poziv(ime)
-        return self.definicija(ime)
+        """Glavna funkcija koja parsira naredbu. Svaka naredba je ili definicija ili izraz."""
+        self.trenutna = None
+        if self > KRAJ: return nenavedeno
+        if self.tokentip_u_liniji(T.DEF_FUN, list(self.stream)):
+            return self.definicija()
+        return self.izraz()
+    
+    def tokentip_u_liniji(self, tip, linija):
+        """Pomoćna funkcija koja provjerava nalazi li se token tipa tip u liniji. Na kraju provjere vraća stream u početno stanje."""
+        for element in linija:
+            if element ^ tip:
+                self.stream = (token for token in linija)
+                return True
+        self.stream = (token for token in linija)
+        return False
     
     def definiraj_i_vrati_funkciju(self, ime, lijeve, izraz):
         if isinstance(lijeve[-1], Token) and lijeve[-1].sadržaj == '0':
-            assert ime.sadržaj + baseString not in self.funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' je već definirana!'
-            self.funkcije.append(ime.sadržaj + baseString)
+            assert ime.sadržaj + baseString not in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' je već definirana!'
+            funkcije.append(ime.sadržaj + baseString)
             return Funkcija(Token(T.IME, ime.sadržaj + baseString), lijeve[:-1], izraz)
         elif isinstance(lijeve[-1], Poziv) and lijeve[-1].ime.sadržaj == 'Sc':
-            assert ime.sadržaj + stepString not in self.funkcije, 'Funkcija ' + ime.sadržaj + stepString + ' je već definirana!'
-            assert ime.sadržaj + baseString in self.funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' nije definirana!'
-            self.funkcije.append(ime.sadržaj + stepString)
-            self.funkcije.append(ime.sadržaj)
+            assert ime.sadržaj + stepString not in funkcije, 'Funkcija ' + ime.sadržaj + stepString + ' je već definirana!'
+            assert ime.sadržaj + baseString in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' nije definirana!'
+            funkcije.append(ime.sadržaj + stepString)
+            funkcije.append(ime.sadržaj)
             lijeve.append(Token(T.IME, prevString))
             return Funkcija(Token(T.IME, ime.sadržaj + stepString), lijeve, izraz)
-        assert ime.sadržaj not in self.funkcije, 'Funkcija ' + ime.sadržaj + ' je već definirana!'
-        self.funkcije.append(ime.sadržaj)
+        assert ime.sadržaj not in funkcije, 'Funkcija ' + ime.sadržaj + ' je već definirana!'
+        funkcije.append(ime.sadržaj)
         return Funkcija(ime, lijeve, izraz)
         
-    def definicija(self, ime):
+    def definicija(self):
+        if self > T.UGOTV: return self.definicija_infix()
+        return self.definicija_funkcije()
+    
+    def definicija_funkcije(self):
+        ime = self >> T.IME
+        self.trenutna = ime.sadržaj
         self >> T.OTV
         lijeve = self.lijeve_varijable()
         self >> T.ZATV
@@ -44,22 +55,16 @@ class P(Parser):
         izraz = self.izraz()
         return self.definiraj_i_vrati_funkciju(ime, lijeve, izraz)
 
-    def infix(self):
+    def definicija_infix(self):
         self >> T.UGOTV
-        prvi, operator, drugi, izraz = None, None, None, None
-        if ime := self >= T.IME:
-            if self > T.OTV:        # lijevi parametar infix funkcije je poziv, pa je ovo poziv infix funkcije
-                return self.poziv_infix(lijevi=ime)
-            else:       # lijevi parametar infix funkcije je ime, pa je ovo definicija infix funkcije
-                prvi = ime
-                operator = Token(T.IME, (self >> T.OP).sadržaj)
-                drugi = self.lijeva_varijabla()
-                self >> T.UGZATV
-                self >> T.DEF_FUN
-                izraz = self.izraz()
-                return self.definiraj_i_vrati_funkciju(operator, [prvi, drugi], izraz)
-        else:       # lijevi parametar infix funkcije ne počinje s imenom (nego npr. s otvorenom zagradom ili brojem), pa je ovo poziv infix funkcije
-            return self.poziv_infix(lijevi=None)
+        prvi = self.lijeva_varijabla()
+        operator = Token(T.IME, (self >> T.OP).sadržaj)
+        self.trenutna = operator.sadržaj
+        drugi = self.lijeva_varijabla()
+        self >> T.UGZATV
+        self >> T.DEF_FUN
+        izraz = self.izraz()
+        return self.definiraj_i_vrati_funkciju(operator, [prvi, drugi], izraz)
         
     def lijeve_varijable(self):
         lijeve = [self.lijeva_varijabla()]
@@ -93,6 +98,7 @@ class P(Parser):
         return Poziv(operator, [lijevi, desni])
     
     def poziv(self, ime):
+        assert ime.sadržaj in funkcije or ime.sadržaj == self.trenutna or re.match(r'I_\d+', ime.sadržaj), 'Funkcija ' + ime.sadržaj + ' nije definirana!'
         self >> T.OTV
         assert not self > T.ZATV, 'Funkcije s 0 argumenata nisu podržane!'
         desne = self.desne_varijable()

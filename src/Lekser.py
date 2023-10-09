@@ -14,15 +14,12 @@ def checkIfLiteral(string, cls):
 @lexer
 def lekser(ulaz):
     for znak in ulaz:
-        if znak == '\n':
-            yield ulaz.token(T.NEWLINE)
-        elif znak.isspace():
+        if znak.isspace():
             ulaz.zanemari()
         elif znak == '/':
             if ulaz >= '/':
                 ulaz.pročitaj_do('\n')
                 ulaz.zanemari()
-                yield ulaz.token(T.NEWLINE)
             elif ulaz >= '*':
                 while ...:
                     ulaz.pročitaj_do('*', više_redova=True)

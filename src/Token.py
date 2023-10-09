@@ -1,7 +1,7 @@
 from vepar import *
 
 class T(TipoviTokena):
-    DEF_FUN, NEWLINE, LOG_ILI, LOG_I, MU, IF, MJEDNAKO = ':=', '\n', '||', '&&', 'mu', 'if', '<='
+    DEF_FUN, LOG_ILI, LOG_I, MU, IF, MJEDNAKO = ':=', '||', '&&', 'mu', 'if', '<='
     OTV, ZATV, ZAREZ, LOG_NE, CARD, MANJE, VOTV, VZATV, UGOTV, UGZATV, DVOTOČKA = '(),!#<{}[]:'
     class IME(Token):
         def izvrši(self, memorija, funkcije):
