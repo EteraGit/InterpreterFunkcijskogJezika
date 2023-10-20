@@ -7,41 +7,9 @@ funkcije = ['Z', 'Sc']
 
 class P(Parser):
     trenutna: str
-    
-    def naredba(self):
-        """Glavna funkcija koja parsira naredbu. Svaka naredba je ili definicija ili izraz."""
-        self.trenutna = None
-        if self > KRAJ: return nenavedeno
-        if self.tokentip_u_liniji(T.DEF_FUN, list(self.stream)):
-            return self.definicija()
-        return self.izraz()
-    
-    def tokentip_u_liniji(self, tip, linija):
-        """Pomoćna funkcija koja provjerava nalazi li se token tipa tip u liniji. Na kraju provjere vraća stream u početno stanje."""
-        for element in linija:
-            if element ^ tip:
-                self.stream = (token for token in linija)
-                return True
-        self.stream = (token for token in linija)
-        return False
-    
-    def definiraj_i_vrati_funkciju(self, ime, lijeve, izraz):
-        if isinstance(lijeve[-1], Token) and lijeve[-1].sadržaj == '0':
-            assert ime.sadržaj + baseString not in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' je već definirana!'
-            funkcije.append(ime.sadržaj + baseString)
-            return Funkcija(Token(T.IME, ime.sadržaj + baseString), lijeve[:-1], izraz)
-        elif isinstance(lijeve[-1], Poziv) and lijeve[-1].ime.sadržaj == 'Sc':
-            assert ime.sadržaj + stepString not in funkcije, 'Funkcija ' + ime.sadržaj + stepString + ' je već definirana!'
-            assert ime.sadržaj + baseString in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' nije definirana!'
-            funkcije.append(ime.sadržaj + stepString)
-            funkcije.append(ime.sadržaj)
-            lijeve.append(Token(T.IME, prevString))
-            return Funkcija(Token(T.IME, ime.sadržaj + stepString), lijeve, izraz)
-        assert ime.sadržaj not in funkcije, 'Funkcija ' + ime.sadržaj + ' je već definirana!'
-        funkcije.append(ime.sadržaj)
-        return Funkcija(ime, lijeve, izraz)
-        
+
     def definicija(self):
+        self.trenutna = None
         if self > T.UGOTV: return self.definicija_infix()
         return self.definicija_funkcije()
     
@@ -65,6 +33,22 @@ class P(Parser):
         self >> T.DEF_FUN
         izraz = self.izraz()
         return self.definiraj_i_vrati_funkciju(operator, [prvi, drugi], izraz)
+    
+    def definiraj_i_vrati_funkciju(self, ime, lijeve, izraz):
+        if isinstance(lijeve[-1], Token) and lijeve[-1].sadržaj == '0':
+            assert ime.sadržaj + baseString not in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' je već definirana!'
+            funkcije.append(ime.sadržaj + baseString)
+            return Funkcija(Token(T.IME, ime.sadržaj + baseString), lijeve[:-1], izraz)
+        elif isinstance(lijeve[-1], Poziv) and lijeve[-1].ime.sadržaj == 'Sc':
+            assert ime.sadržaj + stepString not in funkcije, 'Funkcija ' + ime.sadržaj + stepString + ' je već definirana!'
+            assert ime.sadržaj + baseString in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' nije definirana!'
+            funkcije.append(ime.sadržaj + stepString)
+            funkcije.append(ime.sadržaj)
+            lijeve.append(Token(T.IME, prevString))
+            return Funkcija(Token(T.IME, ime.sadržaj + stepString), lijeve, izraz)
+        assert ime.sadržaj not in funkcije, 'Funkcija ' + ime.sadržaj + ' je već definirana!'
+        funkcije.append(ime.sadržaj)
+        return Funkcija(ime, lijeve, izraz)
         
     def lijeve_varijable(self):
         lijeve = [self.lijeva_varijabla()]
@@ -111,6 +95,10 @@ class P(Parser):
         while self >= T.ZAREZ:
             desne.append(self.izraz())
         return desne
+    
+    def evaluacija_izraza(self):
+        self.trenutna = None
+        return self.izraz()
     
     def izraz(self):
         return self.log_ILI()
