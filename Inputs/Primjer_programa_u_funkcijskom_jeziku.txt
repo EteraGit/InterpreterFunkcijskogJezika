@@ -40,6 +40,8 @@ Greater(x,y) := Positive(sub(x,y))
 
 div(x,y) := pd((mu z <= x)Greater(mul(z,y),x))
 
+[x / y] := div(x,y)
+
 mod(x,y) := sub(x,mul(y,div(x,y)))   // (x-(y*(x//y)))
 
 Equal(x,y) := !Greater(x,y) && !Greater(y,x)
@@ -178,4 +180,8 @@ RelationWithFunctions(10, 1)    // 0
 
 Z(3) && 3   // 0
 
+[7 / 3] // 2
+
 factorial(7)   // 5040, malo dulje traje
+
+

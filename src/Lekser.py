@@ -20,12 +20,9 @@ def lekser(ulaz):
             if ulaz >= '/':
                 ulaz.pročitaj_do('\n')
                 ulaz.zanemari()
-            elif ulaz >= '*':
-                while ...:
-                    ulaz.pročitaj_do('*', više_redova=True)
-                    if ulaz >= '/':
-                        ulaz.zanemari()
-                        break
+            else:
+                ulaz * {lambda c: not checkIfLiteral(ulaz.sadržaj, T) and not c.isalnum() and not c.isspace()}
+                yield ulaz.literal_ili(T.OP)
         elif znak == '<':
             if ulaz >= '=': yield ulaz.token(T.MJEDNAKO)
             else: yield ulaz.token(T.MANJE)

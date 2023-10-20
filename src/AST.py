@@ -28,7 +28,7 @@ class Program(AST):
         self.def_inicijalne(funkcije)
         for naredba in self.naredbe:
             if naredba is not nenavedeno:
-                print(naredba.izvrši(Memorija(), funkcije)) if isinstance(naredba, Poziv) else naredba.izvrši(Memorija(), funkcije)
+                print(naredba.izvrši(Memorija(), funkcije)) if not isinstance(naredba, Funkcija) else naredba.izvrši(Memorija(), funkcije)
 
     def def_inicijalne(self, funkcije):
         funkcije[Token(T.IME, 'Z')] = PythonFunction(Token(T.IME, 'Z'), Z)
