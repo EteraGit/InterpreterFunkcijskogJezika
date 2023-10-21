@@ -7,9 +7,12 @@ funkcije = ['Z', 'Sc']
 
 class P(Parser):
     trenutna: str
+    zamjena: tuple
 
     def definicija(self):
+        if self > KRAJ: return nenavedeno
         self.trenutna = None
+        self.zamjena = None
         if self > T.UGOTV: return self.definicija_infix()
         return self.definicija_funkcije()
     
@@ -20,7 +23,9 @@ class P(Parser):
         lijeve = self.lijeve_varijable()
         self >> T.ZATV
         self >> T.DEF_FUN
+        if ime.sadržaj + baseString in funkcije: self.zamjena = (ime, lijeve.copy())
         izraz = self.izraz()
+        self.zamjena = None
         return self.definiraj_i_vrati_funkciju(ime, lijeve, izraz)
 
     def definicija_infix(self):
@@ -31,24 +36,26 @@ class P(Parser):
         drugi = self.lijeva_varijabla()
         self >> T.UGZATV
         self >> T.DEF_FUN
+        if operator.sadržaj + baseString in funkcije: self.zamjena = (operator, [prvi, drugi].copy())
         izraz = self.izraz()
+        self.zamjena = None
         return self.definiraj_i_vrati_funkciju(operator, [prvi, drugi], izraz)
     
     def definiraj_i_vrati_funkciju(self, ime, lijeve, izraz):
         if isinstance(lijeve[-1], Token) and lijeve[-1].sadržaj == '0':
             assert ime.sadržaj + baseString not in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' je već definirana!'
             funkcije.append(ime.sadržaj + baseString)
-            return Funkcija(Token(T.IME, ime.sadržaj + baseString), lijeve[:-1], izraz)
+            return Definicija(Token(T.IME, ime.sadržaj + baseString), lijeve[:-1], izraz)
         elif isinstance(lijeve[-1], Poziv) and lijeve[-1].ime.sadržaj == 'Sc':
             assert ime.sadržaj + stepString not in funkcije, 'Funkcija ' + ime.sadržaj + stepString + ' je već definirana!'
             assert ime.sadržaj + baseString in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' nije definirana!'
             funkcije.append(ime.sadržaj + stepString)
             funkcije.append(ime.sadržaj)
             lijeve.append(Token(T.IME, prevString))
-            return Funkcija(Token(T.IME, ime.sadržaj + stepString), lijeve, izraz)
+            return Definicija(Token(T.IME, ime.sadržaj + stepString), lijeve, izraz)
         assert ime.sadržaj not in funkcije, 'Funkcija ' + ime.sadržaj + ' je već definirana!'
         funkcije.append(ime.sadržaj)
-        return Funkcija(ime, lijeve, izraz)
+        return Definicija(ime, lijeve, izraz)
         
     def lijeve_varijable(self):
         lijeve = [self.lijeva_varijabla()]
@@ -73,12 +80,17 @@ class P(Parser):
         self >> T.ZATV
         return Poziv(ime, [varijabla])
     
-    def poziv_infix(self, lijevi):
-        if lijevi is None: lijevi = self.izraz()
-        else: lijevi = self.poziv(lijevi)
+    def poziv_infix(self):
+        self >> T.UGOTV
+        lijevi = self.izraz()
         operator = Token(T.IME, (self >> T.OP).sadržaj)
         desni = self.izraz()
         self >> T.UGZATV
+        if self.zamjena is not None:
+            ime_zamjena, lijeve_zamjena = self.zamjena
+            if isinstance(lijeve_zamjena[-1], Poziv): lijeve_zamjena[-1] = lijeve_zamjena[-1].parametri[0]
+            if ime_zamjena == operator and lijeve_zamjena == [lijevi, desni]:
+                return Token(T.IME, prevString)
         return Poziv(operator, [lijevi, desni])
     
     def poziv(self, ime):
@@ -87,7 +99,11 @@ class P(Parser):
         assert not self > T.ZATV, 'Funkcije s 0 argumenata nisu podržane!'
         desne = self.desne_varijable()
         self >> T.ZATV
-        assert not self > T.DEF_FUN, 'Nedozvoljena redefinicija funkcije ' + ime.sadržaj + '!'
+        if self.zamjena is not None:
+            ime_zamjena, lijeve_zamjena = self.zamjena
+            if isinstance(lijeve_zamjena[-1], Poziv): lijeve_zamjena[-1] = lijeve_zamjena[-1].parametri[0]
+            if ime_zamjena == ime and lijeve_zamjena == desne:
+                return Token(T.IME, prevString)
         return Poziv(ime, desne)
     
     def desne_varijable(self):
@@ -98,6 +114,8 @@ class P(Parser):
     
     def evaluacija_izraza(self):
         self.trenutna = None
+        self.zamjena = None
+        if self > KRAJ: return nenavedeno
         return self.izraz()
     
     def izraz(self):
@@ -131,7 +149,7 @@ class P(Parser):
         if self > T.MU: return self.minimizacija(otvorena=False)
         if self > T.CARD: return self.brojeća(otvorena=False)
         if self > T.IF: return self.grananje()
-        if self >= T.UGOTV: return self.poziv_infix(lijevi=None)
+        if self > T.UGOTV: return self.poziv_infix()
         return self >> T.BROJ
     
     def minimizacija(self, otvorena):

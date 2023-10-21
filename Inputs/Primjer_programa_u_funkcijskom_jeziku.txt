@@ -22,7 +22,7 @@ doubleSub(x,Sc(y)) := pd(pd(doubleSub(x,y)))
 [x + 0] := x
 [x + Sc(y)] := Sc([x+y])
 
-[x -- y] := sub(x,y)
+[x - y] := sub(x,y)
 
 [x * 0] := 0
 [x * Sc(y)] := [x + [x * y]]
@@ -68,6 +68,12 @@ k(x) := (mu y) (Greater(x,y) && !Equal(x,y))
 
 Grananje(x,y) := if{k(x):k(x), [Z(x)+1]}
 
+Primes_LEQ(0) := 0
+Primes_LEQ(Sc(x)) := if{Prime(Sc(x)): Sc(Primes_LEQ(x)), Primes_LEQ(x)}
+
+Primes_LEQ(11)
+Primes_LEQ(30)
+
 [I_1(2, 4, 5) * 7]
 
 pow(10,3)
@@ -76,17 +82,17 @@ pow(10,3)
 
 nextprime(11) // 13
 
-[add(10,5) * [3 -- 1]]  // 30
+[add(10,5) * [3 - 1]]  // 30
 
-[10 + [[5 -- 2] * 7]]  // 31
+[10 + [[5 - 2] * 7]]  // 31
 
 nextprime([Greater(1,2) || Greater(2,1) + Prime(7)]) // 3
 
 [Prime(2) + nextprime(10)]  // 12
 
-Greater([factorial([2+2]) -- nextprime(2)], 2) // 1
+Greater([factorial([2+2]) - nextprime(2)], 2) // 1
 
-[[add(10,[2+3]) * [0 -- 2]] + [[7 * nextprime(6)] -- 12]]  // 37
+// [[add(10,[2+3]) * [0 - 2]] + [[7 * nextprime(6)] - 12]]  // 37
 
 Zagrade0(5,6,7) // 1
 

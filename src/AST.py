@@ -28,7 +28,7 @@ class Program(AST):
         self.def_inicijalne(funkcije)
         for naredba in self.naredbe:
             if naredba is not nenavedeno:
-                print(naredba.izvrši(Memorija(), funkcije)) if not isinstance(naredba, Funkcija) else naredba.izvrši(Memorija(), funkcije)
+                print(naredba.izvrši(Memorija(), funkcije)) if not isinstance(naredba, Definicija) else naredba.izvrši(Memorija(), funkcije)
 
     def def_inicijalne(self, funkcije):
         funkcije[Token(T.IME, 'Z')] = PythonFunction(Token(T.IME, 'Z'), Z)
@@ -41,18 +41,18 @@ class PythonFunction(AST):
     def pozovi(self, argumenti, memorija, funkcije):
         return funkcije[self.ime].izraz(argumenti[0])
 
-class Funkcija(AST):
+class Definicija(AST):
     ime: Token
     parametri: List[AST]
     izraz: AST
     
     def izvrši(self, memorija, funkcije):
-        funkcije[self.ime] = self
+        funkcije[self.ime] = self   # definiraj ovu funkciju
         if stepString in self.ime.sadržaj:
             ime = Token(T.IME, self.ime.sadržaj[:-len(stepString)])
-            funkcije[ime] = Funkcija(ime, self.parametri[:-1], self.izraz)
-            if isinstance(funkcije[self.ime].parametri[-2], Poziv): self.parametri[-2] = self.parametri[-2].parametri[0]
-            if isinstance(funkcije[self.ime].izraz, Poziv): funkcije[self.ime].izraz.zamijeni(ime, funkcije)
+            funkcije[ime] = Definicija(ime, self.parametri[:-1], self.izraz)  # definiraj verziju funkcije bez #Step
+            if isinstance(funkcije[ime].parametri[-1], Poziv): funkcije[ime].parametri[-1] = funkcije[ime].parametri[-1].parametri[0]  # zamijeni Sc(y) s y u običnoj verziji funkcije
+            if isinstance(funkcije[self.ime].parametri[-2], Poziv): funkcije[self.ime].parametri[-2] = funkcije[self.ime].parametri[-2].parametri[0]    # zamijeni Sc(y) s y u #Step verziji funkcije
         self.provjeri_parametre()
     
     def pozovi(self, argumenti, memorija, funkcije):
@@ -84,14 +84,6 @@ class Poziv(AST):
         if re.match(r'I_\d+', self.ime.sadržaj):
             return I(int(self.ime.sadržaj[2:]))(*[parametar.izvrši(memorija, funkcije) for parametar in self.parametri])
         return funkcije[self.ime].pozovi([parametar.izvrši(memorija, funkcije) for parametar in self.parametri], memorija, funkcije)
-    
-    def zamijeni(self, ime, funkcije):
-        for i, parametar in enumerate(self.parametri):
-            if hasattr(parametar, 'ime') and parametar.ime.sadržaj == ime.sadržaj:
-                self.parametri[i] = Token(T.IME, prevString)
-                return self.parametri[i]
-            elif isinstance(parametar, Poziv):
-                return parametar.zamijeni(ime, funkcije)
             
 class Log_ILI(AST):
     disjunkcija: List[AST]
