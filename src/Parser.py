@@ -48,9 +48,10 @@ class P(Parser):
             return Definicija(Token(T.IME, ime.sadržaj + baseString), lijeve[:-1], izraz)
         elif isinstance(lijeve[-1], Poziv) and lijeve[-1].ime.sadržaj == 'Sc':
             assert ime.sadržaj + stepString not in funkcije, 'Funkcija ' + ime.sadržaj + stepString + ' je već definirana!'
-            assert ime.sadržaj + baseString in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' nije definirana!'
+            assert ime.sadržaj + baseString in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' nije definirana prije funkcije ' + ime.sadržaj + stepString + '!'
             funkcije.append(ime.sadržaj + stepString)
             funkcije.append(ime.sadržaj)
+            lijeve[-1] = lijeve[-1].parametri[0]
             lijeve.append(Token(T.IME, prevString))
             return Definicija(Token(T.IME, ime.sadržaj + stepString), lijeve, izraz)
         assert ime.sadržaj not in funkcije, 'Funkcija ' + ime.sadržaj + ' je već definirana!'

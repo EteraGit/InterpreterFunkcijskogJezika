@@ -51,20 +51,17 @@ class Definicija(AST):
         if stepString in self.ime.sadržaj:
             ime = Token(T.IME, self.ime.sadržaj[:-len(stepString)])
             funkcije[ime] = Definicija(ime, self.parametri[:-1], self.izraz)  # definiraj verziju funkcije bez #Step
-            if isinstance(funkcije[ime].parametri[-1], Poziv): funkcije[ime].parametri[-1] = funkcije[ime].parametri[-1].parametri[0]  # zamijeni Sc(y) s y u običnoj verziji funkcije
-            if isinstance(funkcije[self.ime].parametri[-2], Poziv): funkcije[self.ime].parametri[-2] = funkcije[self.ime].parametri[-2].parametri[0]    # zamijeni Sc(y) s y u #Step verziji funkcije
         self.provjeri_parametre()
     
     def pozovi(self, argumenti, memorija, funkcije):
         assert len(self.parametri) == len(argumenti), 'Funkcija ' + self.ime.sadržaj + ' je mjesnosti ' + str(len(self.parametri)) + ', a ne ' + str(len(argumenti)) + '!'
         if baseString in self.ime.sadržaj:
             return self.izraz.izvrši(Memorija(zip(self.parametri, argumenti)), funkcije)
-        elif stepString not in self.ime.sadržaj and self.ime.sadržaj + baseString in funkcije:
+        elif stepString not in self.ime.sadržaj and self.ime.sadržaj + stepString in funkcije:
             z = funkcije[self.ime.sadržaj + baseString].pozovi(argumenti[:-1], memorija, funkcije)
             for i in range(argumenti[-1]):
                 args = argumenti[:-1]
-                args.append(i)
-                args.append(z) 
+                args.append(i), args.append(z) 
                 z = funkcije[self.ime.sadržaj + stepString].pozovi(args, memorija, funkcije)
             return z
         return self.izraz.izvrši(Memorija(zip(self.parametri, argumenti)), funkcije)
