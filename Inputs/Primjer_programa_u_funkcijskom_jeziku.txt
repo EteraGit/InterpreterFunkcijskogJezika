@@ -71,8 +71,13 @@ Grananje(x,y) := if{k(x):k(x), [Z(x)+1]}
 Primes_LEQ(0) := 0
 Primes_LEQ(Sc(x)) := if{Prime(Sc(x)): Sc(Primes_LEQ(x)), Primes_LEQ(x)}
 
+add((mu x < 5) Greater(x,2), (# x < 5) Greater(x,1))
+
+veci(x,y) := if{Greater(x,y): x, y}
+veci(2,1)   // 2
+
 Primes_LEQ(11)
-Primes_LEQ(30)
+Primes_LEQ(30)  
 
 [I_1(2, 4, 5) * 7]
 

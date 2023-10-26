@@ -120,7 +120,9 @@ class Ograničena_Minimizacija(AST):
         assert self.varijabla not in memorija, 'Varijabla ' + self.varijabla.sadržaj + ' je već definirana!'
         for i in range(self.ograda.izvrši(memorija, funkcije) + self.plus):
             memorija[self.varijabla] = i
-            if self.relacija.izvrši(memorija, funkcije): return i
+            if self.relacija.izvrši(memorija, funkcije): 
+                del memorija[self.varijabla]
+                return i
         return self.ograda.izvrši(memorija, funkcije) + self.plus
     
 class Neograničena_Minimizacija(AST):
@@ -132,7 +134,9 @@ class Neograničena_Minimizacija(AST):
         i = 0
         while True:
             memorija[self.varijabla] = i
-            if self.relacija.izvrši(memorija, funkcije): return i
+            if self.relacija.izvrši(memorija, funkcije):
+                del memorija[self.varijabla]
+                return i
             i += 1
 
 class Brojeća(AST):
@@ -147,6 +151,7 @@ class Brojeća(AST):
         for i in range(self.ograda.izvrši(memorija, funkcije) + self.plus):
             memorija[self.varijabla] = i
             if self.relacija.izvrši(memorija, funkcije): count += 1
+        if self.varijabla in memorija: del memorija[self.varijabla]
         return count
     
 class Grananje(AST):
