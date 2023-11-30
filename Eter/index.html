@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interpreter</title>
+    <link rel="stylesheet" href="pyscript.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Cascadia Code', monospace;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        #innerTag {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        #container {
+            width: 50%;
+            height: 100%;
+            vertical-align: top;
+            display: inline-block;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+
+        a {
+            vertical-align: top;
+            text-decoration: none; /* Remove underlines */
+            color: #0077cc; /* Text color (e.g., blue) */
+            font-size: 16px; /* Font size */
+            font-weight: bold; /* Font weight */
+        }
+
+        /* Hover effect (when the mouse hovers over the link) */
+        a:hover {
+            text-decoration: underline; /* Add underline on hover */
+            color: #004488; /* Change text color on hover (e.g., darker blue) */
+        }
+
+        textarea {
+            height: 200px;
+            width: 90%;
+            font-size: 12px;
+            font-weight: normal;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            resize: vertical;
+        }
+
+        button {
+            display: block;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        #test-output {
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+            color: #333; /* Text color */
+            background-color: #f0f0f0; /* Background color */
+            border: 1px solid #ccc;
+            padding: 10px;
+            max-height: 100px; /* Limit maximum height with scrolling */
+            overflow-y: auto; /* Enable vertical scrolling if content overflows */
+        }
+
+        /* Style for the header */
+header {
+    background-color: #007BFF;
+    color: #fff;
+    padding: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Style for the navigation menu */
+header nav ul {
+    list-style: none;
+    margin-left: 10px;
+    padding: 0;
+}
+
+header nav ul li {
+    display: inline;
+    margin-right: 20px;
+}
+
+header nav ul li a {
+    text-decoration: none;
+    color: #fff;
+    font-weight: bold;
+    font-size: 16px;
+    transition: color 0.3s;
+}
+
+header nav ul li a:hover {
+    color: #004488;
+}
+
+/* Style for the buttons */
+.header-buttons button {
+    background-color: #549ae5;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 10px;
+    padding: 10px 20px;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.header-buttons button:hover {
+    background-color: #0056b3;
+}
+
+/* Media query for smaller screens */
+@media screen and (max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    header nav ul li {
+        display: block;
+        margin: 5px 0;
+    }
+
+    .header-buttons {
+        margin-top: 10px;
+    }
+
+    .header-buttons button {
+        display: block;
+        margin: 5px 0;
+    }
+    .but {
+  display: inline-block;
+  padding: 10px 10px; /* Adjust the padding as needed */
+  background-color: #3498db; /* Change the background color */
+  color: #ffffff; /* Change the text color */
+  border: none;
+  border-radius: 5px; /* Adjust the border radius for rounded corners */
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.3s ease; /* Add a smooth transition effect */
+  line-height: 1; /* Adjust the line height for vertical centering */
+  vertical-align: middle; /* Center the content vertically */
+  width: 30%; /* Adjust the percentage as needed */
+  height: 8%;
+  margin-right: 10px;
+  font-size: 1.5vmin; /* Adjust the vmin value as needed */
+        margin: 0 2%; /* Adjust the percentage as needed */
+}
+}
+
+.table-container {
+      overflow: auto;
+      height: 400px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+      padding: 8px;
+      vertical-align: middle;
+      text-align: center;
+      font-size: 16px; /* Adjust the font size */
+      height: 30px; /* Set the height of the table cells */
+      width: auto;
+    }
+
+    .topcontainer {
+      display: flex;
+        
+      height: 100%;
+    }
+
+    .box {
+      width: 40%;
+      border: 1px solid #ccc;
+      padding: 20px;
+      margin: 0 auto;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    }
+
+    p{
+        font-size: 1.5vmin;
+        justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+    }
+
+    h1{
+        font-size: 24px;
+    }
+
+    /* Define a button class */
+.but {
+    flex: 1;
+    display: inline-block;
+    align-items: center;
+    justify-content: center;
+  background-color: #3498db; /* Change the background color */
+  color: #ffffff; /* Change the text color */
+  border: none;
+  border-radius: 5px; /* Adjust the border radius for rounded corners */
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background-color 0.3s ease; /* Add a smooth transition effect */
+  line-height: 1; /* Adjust the line height for vertical centering */
+  vertical-align: middle; /* Center the content vertically */
+  width: 17%; /* Adjust the percentage as needed */
+  margin-right: 10px;
+  font-size: 1.5vmin; /* Adjust the vmin value as needed */
+}
+
+/* Hover effect */
+.but:hover {
+  background-color: #2980b9; /* Change the background color on hover */
+}
+
+.button-container {
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+  height: 100%; /* Match the height of the <td> */
+}
+
+.buttons{
+    flex: 10;
+    justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+    display: flex;
+    text-align: center;
+}
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <ul>
+                <li><a href="Interpreter.html">Dokumentacija</a></li>
+                <li><a href="https://github.com/EteraGit/InterpreterFunkcijskogJezika">Izvorni kod na GitHub-u</a></li>
+            </ul>
+        </nav>
+    </header>
+    <br>
+    <div class="topcontainer">
+        <div id="container">
+            <h1>Interpreter za parcijalno rekurzivne funkcije</h1>
+            <textarea id="test-input" placeholder="Unesite kod ovdje..."></textarea>
+            <div class="buttons">
+                <button class="but" py-click="obrisi()" id="obrisi" style="margin-left: 15px;">Obriši kod</button>
+                <button class="but" id="insert-text-button1">Jednostavni program</button>
+                <button class="but" id="insert-text-button2">Složeni program</button>
+                <button id="submit-button" class="but" py-click="start()" style="margin-left: 40px; background-color: rgb(26, 26, 195);">
+                    Interpretiraj!
+                </button>
+                <div style="padding: 10px 10px; text-align: center;">
+                    <p>a nakon toga možeš i</p>
+                </div>
+                <button class="but" onclick=stablo() style="margin-right: 8%;">Prikazati stablo!</button>
+            </div>
+            <textarea id="test-output" disabled></textarea>
+        </div>
+        <div class="box">
+            <!--<div class="header-container">
+                <table>
+                    <tr>
+                        <th>Funkcije</th>
+                        <th>Mjesnost</th>
+                        <th>Brisanje</th>
+                    </tr>
+                </table>
+            </div>-->
+            <div class="table-container">
+                <table id="funkcijeTable">
+                    <tr>
+                        <th>Funkcije</th>
+                        <th>Argumenti</th>
+                        <th>Izraz</th>
+                        <th>Brisanje</th>
+                    </tr>
+                </table>
+            </div>
+            <br>
+            <button class="but" py-click="reset_funkcije()">Obriši sve funkcije!</button>
+        </div>
+    </div>
+    <div id="tree-container">
+
+    </div>
+    <py-config>
+        plugins = [
+          "https://pyscript.net/latest/plugins/python/py_tutor.py"
+        ]
+        [[fetch]]
+        files = ["vepar.py", "Token.py", "Lekser.py",  "Parser.py", "AST.py"]
+    </py-config>
+
+    <py-script>
+        from vepar import *
+        from AST import *
+        from Lekser import *
+        from Token import *
+        from Parser import *
+        import json
+        from js import document
+    </py-script>
+
+    <py-script>
+        def obrisi():
+            Element('test-input').element.value = ""
+
+        def start():
+            Element('test-output').element.innerHTML = ""
+            ulaz = Element('test-input').element.value + "\n"
+            ulaz = ulaz.split('\n')
+            naredbe = []
+            for linija in ulaz:
+                linija += '\n'
+                if ':=' in linija: 
+                    P.start = P.definicija
+                    index = linija.find(':=')
+                    P.izr = linija[index + len(':='):].strip()
+                elif linija.isspace(): continue
+                else: P.start = P.evaluacija_izraza
+                try:
+                    naredbe.append(P(linija))
+                except Exception as e:
+                    Element('test-output').element.innerHTML += "Sintaksna greška: " + str(e) + "\n"
+            ast = Program(naredbe)
+            ast.stablo()
+            root = ast
+            tree_data = tree_to_json(root)
+            json_data = json.dumps(tree_data)
+
+            script_element = Element('tree-data').element
+            script_element.text = json.dumps(json_data)
+
+            Element('test-output').element.innerHTML += ast.izvrši()
+            updateTable()
+
+        def updateTable():
+            table = Element('funkcijeTable').element
+            table.innerHTML = ""
+            tablehtml = "&lt;table&gt;&lt;tr&gt;&lt;th&gt;Funkcije&lt;/th&gt;&lt;th&gt;Argumenti&lt;/th&gt;&lt;th&gt;Izraz&lt;/th&gt;&lt;th&gt;Brisanje&lt;/th&gt;&lt;/tr&gt;"
+            for i,f in enumerate(rt.funkcijeAST.podaci.keys()):
+                if f != 'Z' and f != 'Sc' and '#Base' not in f and '#Step' not in f:
+                    fun_str = f' py-click="fun = \'{f}\'; izbrisiFunkciju(fun); updateTable()"'
+                    args = []
+                    for arg in rt.funkcijeAST[f].parametri:
+                        args.append(arg.sadržaj)
+                    arg_str = "(" + ','.join(args) + ")"
+                    tablehtml += "&lt;tr&gt;"
+                    tablehtml += "&lt;td&gt;" + f + "&lt;/td&gt;"
+                    tablehtml += "&lt;td&gt;" + arg_str + "&lt;/td&gt;"
+                    tablehtml += "&lt;td&gt;" + rt.funkcijeAST[f].izr + "&lt;/td&gt;"
+                    tablehtml += "&lt;td&gt;&lt;div class='button-container'&gt;&lt;button class='but'" + fun_str + "&gt;Izbriši&lt;/button&gt;&lt;/div&gt;&lt;/td&gt;"
+                    tablehtml += "&lt;/tr&gt;"
+            tablehtml += "&lt;/table&gt;"
+            table.innerHTML = tablehtml
+
+        def izbrisiFunkciju(f):
+            del rt.funkcijeAST[f]
+            if f + "#Base" in rt.funkcijeAST.podaci.keys():
+                del rt.funkcijeAST[f + "#Base"]
+            if f + "#Step" in rt.funkcijeAST.podaci.keys():
+                del rt.funkcijeAST[f + "#Step"]
+
+        def reset_funkcije():
+            rt.funkcijeAST = Memorija()
+            updateTable()
+
+        def tree_to_json(node):
+            if not node:
+                return None
+            return {
+                "name": node.__class__.__name__ + ': ' + node.ime.sadržaj if hasattr(node, "ime") else (node.__class__.__name__ + ': ' + node.pomime if hasattr(node, "pomime") else "default"),
+                "children": [tree_to_json(child) for child in node.djeca]
+            }
+        json_data = None
+            
+    </py-script>
+
+    <script type="text/javascript">
+$(document).ready(function(){
+if (typeof console != "undefined") 
+    if (typeof console.log != 'undefined')
+        console.olog = console.log;
+    else
+        console.olog = function() {};
+
+console.log = function(message) {
+    console.olog("Output: " + message);
+    if (message == "importing py_tutor") {
+        return;
+    }
+    $('#test-output').val($('#test-output').val() + message + '\n');
+};
+
+var tableContainer = $(".table-container");
+});
+
+function reset_funkcije(i)
+{
+    console.log(i);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    var submitButton = document.getElementById("submit-button");
+
+    var scriptElement = document.createElement("script");
+    scriptElement.setAttribute("type", "text/json");
+    scriptElement.setAttribute("id", "tree-data");
+    document.body.appendChild(scriptElement);
+    
+    submitButton.onclick = function() {
+        var elements = document.getElementsByClassName("py-error");
+
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].remove();
+        }
+    };
+});
+
+        function insertText(text) {
+            const textarea = document.getElementById('test-input');
+            textarea.value = text;
+        }
+        
+
+        // Button 1 click event handler
+        document.getElementById('insert-text-button1').addEventListener('click', function () {
+            insertText("add(x,0) := x\nadd(x,Sc(y)) := Sc(add(x,y))\npd(0) := 0\npd(Sc(y)) := y\nsub(x,0) := x\nsub(x,Sc(y)) := pd(sub(x,y))\nmul(x,0) := 0\nmul(x,Sc(y)) := add(x,mul(x,y))\n\nadd(10,4)\nmul(add(2,3),6)\npd(Sc(mul(2,2)))\n");
+        });
+
+        // Button 2 click event handler
+        
+        document.getElementById('insert-text-button2').addEventListener('click', function () {
+            insertText("add(x,0) := x\nadd(x,Sc(y)) := Sc(add(x,y))\npd(0) := 0\npd(Sc(y)) := y\nsub(x,0) := x\nsub(x,Sc(y)) := pd(sub(x,y))\nmul(x,0) := 0\nmul(x,Sc(y)) := add(x,mul(x,y))\ndoubleSub(x,0) := x\ndoubleSub(x,Sc(y)) := pd(pd(doubleSub(x,y)))\n[x+0] := x\n[x+Sc(y)] := Sc([x+y])\n[x--y] := sub(x,y)\n[x*0] := 0\n[x*Sc(y)] := [x+[x*y]]\nf(x,y) := add(Sc(Sc(x)),y)\ng(x,y) := add(sub(x,y), y)\nh(x,y,z) := mul(Sc(z), sub(x,y))\nfactorial(0) := 1\nfactorial(Sc(n)) := mul(Sc(n),factorial(n))\nPositive(0) := 0\nPositive(Sc(x)) := 1\nGreater(x,y) := Positive(sub(x,y))\ndiv(x,y) := pd((mu z <= x)Greater(mul(z,y),x))\nmod(x,y) := sub(x,mul(y,div(x,y)))\nEqual(x,y) := !Greater(x,y) && !Greater(y,x)\nDivides(x,y) := Equal(mod(y,x),Z(x))\nPrime(p) := Equal((#d<=p)Divides(d,p), 2)\nnextprime(p) := (mu q <= mul(p,2))(Prime(q) && Greater(q,p))\nCustomRelation(x,y) :=  !Greater(y,x) && Divides(y,x) || Equal(x,y)\nRelationWithFunctions(x,y) :=  sub(x,y) && pd(y)\nZagrade0(x,y,z) :=  !(Greater(x,y) && Greater(y,z)) && (Greater(z,y) && Greater(y,x))\nZagrade1(x,y) :=  Divides(x,y) || (Greater(x,y) && !Equal(x,y)) && !(Prime(x) || Prime(y))\nZagrade2(x,y) :=  (!Prime(nextprime(x)) || nextprime(y)) && !Equal(x,y)\n\n[(mu x <= 10) Greater(x,5) * 2]\nnextprime(11)\n[add(10, 5) * [3 -- 1]]\n[10 + [[5 -- 2] * 7]]\nnextprime([Greater(1,2) || Greater(2,1) + Prime(7)])\n[Prime(2) + nextprime(10)]\nGreater([factorial([2+2]) -- nextprime(2)], 2)\n[[add(10,[2+3]) * [0 -- 2]] + [[7 * nextprime(6)] -- 12]]\nZagrade0(5,6,7)\nZagrade1(10,4)\nZagrade2(5,4)\nadd(10, 5)\nsub(10, 2)\nsub(5, 5)\nsub(0, 0)\nsub(1, 2)\npd(Sc(4))\nmul(2, 3)\nmul(add(2,3), sub(5, 2))\nmul(mul(2,2), 4)\nfactorial(5)\nmul(factorial(4), 4)\nf(2,3)\ng(2,3)\nh(10,3,4)\nPositive(0)\nPositive(10)\nPositive(sub(4,4))\nGreater(10, 2)\nGreater(2, 10)\nGreater(2, 2)\ndiv(10, 2)\ndiv(0, 2)\ndiv(15, 4)\nmod(20, 2)\nmod(20, 3)\nmod(16, 7)\nEqual(10, 10)\nEqual(10, 11)\nEqual(10, 9)\nDivides(2, 10)\nDivides(3, 10)\nDivides(0, 10)\nPrime(2)\nPrime(3)\nPrime(4)\nPrime(5)\nPrime(6)\nPrime(7)\nPrime(8)\nPrime(9)\nPrime(10)\nPrime(11)\nPrime(12)\nnextprime(2)\nnextprime(3)\nnextprime(4)\nnextprime(5)\nnextprime(6)\nnextprime(7)\nnextprime(8)\nnextprime(9)\nnextprime(10)\nnextprime(11)\nCustomRelation(10, 2)\nCustomRelation(5, 5)\nCustomRelation(10, 3)\ndoubleSub(10, 2)\nRelationWithFunctions(10, 2)\nRelationWithFunctions(10, 1)\n");
+        });
+
+        function getMaxDepth(node) {
+            if (!node) return 0; // Base case: if the node is null, depth is 0
+            if (!node.children) return 1; // Base case: if the node has no children, depth is 1
+
+            // Recursively find the depth of each child
+            const childDepths = node.children.map(getMaxDepth);
+
+            // Return the maximum depth among children, plus 1 for the current node
+            return Math.max(...childDepths) + 1;
+        }
+
+
+        function stablo()
+        {
+            var scriptElement = document.querySelector("script[type='text/json']");
+
+            if (scriptElement == undefined)
+                return;
+
+            document.getElementById("tree-container").innerHTML = "";
+
+            var jsonData;
+            try {
+                jsonData = JSON.parse(JSON.parse(scriptElement.text));
+            } catch (error) {
+                console.error("Error parsing JSON data:", error);
+            }
+
+            //console.log(getMaxDepth(jsonData));
+
+            var margin = {top: 20, right: 120, bottom: 20, left: 250},
+            width = jsonData.children.length * 250 + 1000 - margin.right - margin.left,
+            height = jsonData.children.length * 60 - margin.top - margin.bottom;
+                
+            var i = 0;
+
+            var tree = d3.layout.tree()
+                .size([height, width]);
+
+            var diagonal = d3.svg.diagonal()
+                .projection(function(d) { return [d.y, d.x]; });
+
+            var step = function(d, i) {
+                return "M" + d.source.y + "," + d.source.x +
+                    "L" + d.target.y + "," + d.target.x;
+            };
+
+            var svg = d3.select("#tree-container").append("svg")
+                .attr("width", width + margin.right + margin.left)
+                .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            root = jsonData;
+
+            // Compute the new tree layout.
+            var nodes = tree.nodes(root).reverse(),
+            links = tree.links(nodes);
+
+            // Normalize for fixed-depth.
+            nodes.forEach(function(d) { d.y = d.depth * 300; });
+
+            // Declare the nodes�
+            var node = svg.selectAll("g.node")
+                .data(nodes, function(d) { return d.id || (d.id = ++i); });
+
+            // Enter the nodes.
+            var nodeEnter = node.enter().append("g")
+                .attr("class", "node")
+                .attr("transform", function(d) {
+                    return "translate(" + d.y + "," + d.x + ")"; });
+
+            nodeEnter.append("circle")
+                .attr("r", 10)
+                .style("fill", "#9ac0cd");
+
+            nodeEnter.append("text")
+                .attr("x", function(d) {
+                    return d.children || d._children ? -13 : 13; })
+                .attr("dy", ".35em")
+                .attr("text-anchor", function(d) { 
+                    return d.children || d._children ? "end" : "start"; })
+                .text(function(d) { return d.name || "default"; })
+                .style("fill-opacity", 1);
+
+            // Declare the links�
+            var link = svg.selectAll("path.link")
+                .data(links, function(d) { return d.target.id; });
+
+            // Enter the links.
+            link.enter().insert("path", "g")
+            .attr("class", "link")
+            .attr("d", function(d) {
+                return step(d);
+            })
+            .style("stroke", "#ccc") // Set the stroke color
+            .style("stroke-width", 3); // Set the stroke width
+
+        }
+/*
+        {
+            "name": null, 
+            "children": [
+                {
+                    "name": "Sc", 
+                    "children": [
+                        {
+                            "name": null, 
+                            "children": []
+                        }
+                    ]
+                }
+            ]
+        }
+        */
+
+    </script>
+</body>
+</html>

@@ -3,8 +3,6 @@ from AST import *
 from Token import *
 from Lekser import *
 
-funkcije = ['Z', 'Sc']
-
 class P(Parser):
     trenutna: str
     zamjena: tuple
@@ -23,7 +21,7 @@ class P(Parser):
         lijeve = self.lijeve_varijable()
         self >> T.ZATV
         self >> T.DEF_FUN
-        if ime.sadržaj + baseString in funkcije: self.zamjena = (ime, lijeve.copy())
+        if ime.sadržaj + baseString in rt.funkcijeSada: self.zamjena = (ime, lijeve.copy())
         izraz = self.izraz()
         self.zamjena = None
         return self.definiraj_i_vrati_funkciju(ime, lijeve, izraz)
@@ -36,27 +34,26 @@ class P(Parser):
         drugi = self.lijeva_varijabla()
         self >> T.UGZATV
         self >> T.DEF_FUN
-        if operator.sadržaj + baseString in funkcije: self.zamjena = (operator, [prvi, drugi].copy())
+        if operator.sadržaj + baseString in rt.funkcijeSada: self.zamjena = (operator, [prvi, drugi].copy())
         izraz = self.izraz()
         self.zamjena = None
         return self.definiraj_i_vrati_funkciju(operator, [prvi, drugi], izraz)
     
     def definiraj_i_vrati_funkciju(self, ime, lijeve, izraz):
         if isinstance(lijeve[-1], Token) and lijeve[-1].sadržaj == '0':
-            assert ime.sadržaj + baseString not in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' je već definirana!'
-            funkcije.append(ime.sadržaj + baseString)
-            return Definicija(Token(T.IME, ime.sadržaj + baseString), lijeve[:-1], izraz)
+            assert ime.sadržaj + baseString not in rt.funkcijeSada, 'Funkcija ' + ime.sadržaj + baseString + ' je već definirana!'
+            rt.funkcijeSada.append(ime.sadržaj + baseString)
+            return Definicija(Token(T.IME, ime.sadržaj + baseString), lijeve[:-1], izraz, self.izr)
         elif isinstance(lijeve[-1], Poziv) and lijeve[-1].ime.sadržaj == 'Sc':
-            assert ime.sadržaj + stepString not in funkcije, 'Funkcija ' + ime.sadržaj + stepString + ' je već definirana!'
-            assert ime.sadržaj + baseString in funkcije, 'Funkcija ' + ime.sadržaj + baseString + ' nije definirana prije funkcije ' + ime.sadržaj + stepString + '!'
-            funkcije.append(ime.sadržaj + stepString)
-            funkcije.append(ime.sadržaj)
-            lijeve[-1] = lijeve[-1].parametri[0]
+            assert ime.sadržaj + stepString not in rt.funkcijeSada, 'Funkcija ' + ime.sadržaj + stepString + ' je već definirana!'
+            assert ime.sadržaj + baseString in rt.funkcijeSada, 'Funkcija ' + ime.sadržaj + baseString + ' nije definirana!'
+            rt.funkcijeSada.append(ime.sadržaj + stepString)
+            rt.funkcijeSada.append(ime.sadržaj)
             lijeve.append(Token(T.IME, prevString))
-            return Definicija(Token(T.IME, ime.sadržaj + stepString), lijeve, izraz)
-        assert ime.sadržaj not in funkcije, 'Funkcija ' + ime.sadržaj + ' je već definirana!'
-        funkcije.append(ime.sadržaj)
-        return Definicija(ime, lijeve, izraz)
+            return Definicija(Token(T.IME, ime.sadržaj + stepString), lijeve, izraz, self.izr)
+        assert ime.sadržaj not in rt.funkcijeSada, 'Funkcija ' + ime.sadržaj + ' je već definirana!'
+        rt.funkcijeSada.append(ime.sadržaj)
+        return Definicija(ime, lijeve, izraz, self.izr)
         
     def lijeve_varijable(self):
         lijeve = [self.lijeva_varijabla()]
@@ -95,7 +92,7 @@ class P(Parser):
         return Poziv(operator, [lijevi, desni])
     
     def poziv(self, ime):
-        assert ime.sadržaj in funkcije or ime.sadržaj == self.trenutna or re.match(r'I_\d+', ime.sadržaj), 'Funkcija ' + ime.sadržaj + ' nije definirana!'
+        #assert ime.sadržaj in rt.funkcijeSada or ime.sadržaj == self.trenutna or re.match(r'I_\d+', ime.sadržaj), 'Funkcija ' + ime.sadržaj + ' nije definirana!'
         self >> T.OTV
         assert not self > T.ZATV, 'Funkcije s 0 argumenata nisu podržane!'
         desne = self.desne_varijable()
@@ -157,7 +154,7 @@ class P(Parser):
         self >> T.MU
         varijabla = self >> T.IME
         if nejednakost := self >= {T.MJEDNAKO, T.MANJE}:
-            plus = 1 if nejednakost ^ T.MJEDNAKO else 0
+            plus = 1 if nejednakost.sadržaj == '<=' else 0
             ograda = self.list()
             if otvorena: self >> T.ZATV
             relacija = self.izraz()
@@ -171,7 +168,7 @@ class P(Parser):
         self >> T.CARD
         varijabla = self >> T.IME
         nejednakost = self >> {T.MJEDNAKO, T.MANJE}
-        plus = 1 if nejednakost ^ T.MJEDNAKO else 0
+        plus = 1 if nejednakost.sadržaj == '<=' else 0
         ograda = self.list()
         if otvorena: self >> T.ZATV
         relacija = self.izraz()
@@ -179,10 +176,10 @@ class P(Parser):
     
     def grananje(self):
         self >> T.IF
-        self >> T.VOTV
+        self >> T.UGOTV
         uvjeti = [self.izraz()]
         vrijednosti = []
-        while not self >= T.VZATV:
+        while not self >= T.UGZATV:
             self >> T.DVOTOČKA
             vrijednosti.append(self.izraz())
             self >> T.ZAREZ

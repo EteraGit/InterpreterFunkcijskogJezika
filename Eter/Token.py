@@ -6,8 +6,15 @@ class T(TipoviTokena):
     class IME(Token):
         def izvrši(self, memorija, funkcije):
             return memorija[self]
+        def stablo(self):
+            self.pomime = self.sadržaj
+            self.djeca = []
     class BROJ(Token):
         def izvrši(self, memorija, funkcije):
             return int(self.sadržaj)
+        def stablo(self):
+            self.pomime = self.sadržaj
+            self.djeca = []
     class OP(Token):
-        pass
+        def izvrši(self, memorija, funkcije):
+            return str(self.sadržaj)

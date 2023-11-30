@@ -1,25 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interpreter</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link rel="stylesheet" href="pyscript.css" />
-    <script defer src="pyscript.js"></script>
-
-    <style>
-        /* CSS styles for the textarea */
-        textarea {
-            font-family: 'Cascadia Code', monospace;
-            font-size: 14px;
-            font-weight: normal;
-        }
-    </style>
-</head>
-<body>
-    <textarea id="test-input" rows="20" cols="100">
 add(x,0):=x
 add(x,Sc(y)):=Sc(add(x,y))
 
@@ -81,6 +59,8 @@ Zagrade2(x,y):<=> (!Prime(nextprime(x)) || nextprime(y)) && !Equal(x,y)
 
 [(mu x <= 10) Greater(x,5) * 2] // 12
 
+/*
+
 nextprime(11) // 13
 
 [add(10, 5) * [3 -- 1]]  // 30
@@ -94,27 +74,97 @@ nextprime([Greater(1,2) || Greater(2,1) + Prime(7)]) // 3
 Greater([factorial([2+2]) -- nextprime(2)], 2) // 1
 
 [[add(10,[2+3]) * [0 -- 2]] + [[7 * nextprime(6)] -- 12]]  // 37
-    </textarea>
-    <button id="submit-button" type="submit" py-click="start()">Interpretiraj!</button>
-    <div id="test-output"></div>
-    <py-config>
-        plugins = [
-          "https://pyscript.net/latest/plugins/python/py_tutor.py"
-        ]
-        [[fetch]]
-        files = ["./vepar.py", "./Token.py",  "./Parser.py", "./AST.py"]
-    </py-config>
 
-    <py-script>
-        from vepar import *
-        from AST import *
-        from Token import *
-        from Parser import *
+Zagrade0(5,6,7) // 1
 
-        def start():
-            ulaz = Element('test-input').element.value
-            kôd = P(ulaz)
-            kôd.izvrši()
-    </py-script>
-</body>
-</html>
+Zagrade1(10,4) // 1
+
+Zagrade2(5,4) // 1
+
+add(10, 5) // 15
+
+sub(10, 2) // 8
+
+sub(5, 5)  // 0
+
+sub(0, 0)  // 0
+
+sub(1, 2)  // 0
+
+pd(Sc(4))  // 4
+
+mul(2, 3)  // 6
+
+mul(add(2,3), sub(5, 2))  // 15
+
+mul(mul(2,2), 4)  // 16
+
+factorial(5)  // 120
+
+mul(factorial(4), 4)  // 96
+
+f(2,3)  // 7
+
+g(2,3)  // 3
+
+h(10,3,4)  // 35
+
+Positive(0)  // 0
+Positive(10)  // 1
+Positive(sub(4,4))  // 0
+
+Greater(10, 2)  // 1
+Greater(2, 10)  // 0
+Greater(2, 2)  // 0
+
+div(10, 2)  // 5
+div(0, 2)  // 0
+div(15, 4)  // 3
+
+mod(20, 2)  // 0
+mod(20, 3)  // 2
+mod(16, 7)  // 2
+
+Equal(10, 10)   // 1
+Equal(10, 11)   // 0
+Equal(10, 9)    // 0
+
+Divides(2, 10)  // 1
+Divides(3, 10)  // 0
+Divides(0, 10)  // 0
+
+Prime(2)    // 1
+Prime(3)    // 1
+Prime(4)    // 0
+Prime(5)    // 1
+Prime(6)    // 0
+Prime(7)    // 1
+Prime(8)    // 0
+Prime(9)    // 0
+Prime(10)   // 0
+Prime(11)   // 1
+Prime(12)   // 0
+
+nextprime(2)    // 3
+nextprime(3)    // 5
+nextprime(4)    // 5
+nextprime(5)    // 7
+nextprime(6)    // 7
+nextprime(7)    // 11
+nextprime(8)    // 11
+nextprime(9)    // 11
+nextprime(10)   // 11
+nextprime(11)   // 13
+
+CustomRelation(10, 2)   // 1
+CustomRelation(5, 5)   // 1
+CustomRelation(10, 3)   // 0
+
+doubleSub(10, 2)    // 6
+
+RelationWithFunctions(10, 2)    // 1
+RelationWithFunctions(10, 1)    // 0
+
+// factorial(7)   // 5040, malo dulje traje
+
+*/
