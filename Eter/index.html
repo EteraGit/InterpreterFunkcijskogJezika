@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hr">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -9,269 +9,11 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script defer src="https://pyscript.net/latest/pyscript.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
-    <style>
-        body {
-            font-family: 'Cascadia Code', monospace;
-            background-color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-        }
-
-        #innerTag {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        #container {
-            width: 50%;
-            height: 100%;
-            vertical-align: top;
-            display: inline-block;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
-        }
-
-        a {
-            vertical-align: top;
-            text-decoration: none; /* Remove underlines */
-            color: #0077cc; /* Text color (e.g., blue) */
-            font-size: 16px; /* Font size */
-            font-weight: bold; /* Font weight */
-        }
-
-        /* Hover effect (when the mouse hovers over the link) */
-        a:hover {
-            text-decoration: underline; /* Add underline on hover */
-            color: #004488; /* Change text color on hover (e.g., darker blue) */
-        }
-
-        textarea {
-            height: 200px;
-            width: 90%;
-            font-size: 12px;
-            font-weight: normal;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 10px;
-            resize: vertical;
-        }
-
-        button {
-            display: block;
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        #test-output {
-            font-family: 'Arial', sans-serif;
-            font-size: 14px;
-            color: #333; /* Text color */
-            background-color: #f0f0f0; /* Background color */
-            border: 1px solid #ccc;
-            padding: 10px;
-            max-height: 100px; /* Limit maximum height with scrolling */
-            overflow-y: auto; /* Enable vertical scrolling if content overflows */
-        }
-
-        /* Style for the header */
-header {
-    background-color: #007BFF;
-    color: #fff;
-    padding: 10px 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-/* Style for the navigation menu */
-header nav ul {
-    list-style: none;
-    margin-left: 10px;
-    padding: 0;
-}
-
-header nav ul li {
-    display: inline;
-    margin-right: 20px;
-}
-
-header nav ul li a {
-    text-decoration: none;
-    color: #fff;
-    font-weight: bold;
-    font-size: 16px;
-    transition: color 0.3s;
-}
-
-header nav ul li a:hover {
-    color: #004488;
-}
-
-/* Style for the buttons */
-.header-buttons button {
-    background-color: #549ae5;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-left: 10px;
-    padding: 10px 20px;
-    transition: background-color 0.3s, color 0.3s;
-}
-
-.header-buttons button:hover {
-    background-color: #0056b3;
-}
-
-/* Media query for smaller screens */
-@media screen and (max-width: 600px) {
-    header {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-
-    header nav ul li {
-        display: block;
-        margin: 5px 0;
-    }
-
-    .header-buttons {
-        margin-top: 10px;
-    }
-
-    .header-buttons button {
-        display: block;
-        margin: 5px 0;
-    }
-    .but {
-  display: inline-block;
-  padding: 10px 10px; /* Adjust the padding as needed */
-  background-color: #3498db; /* Change the background color */
-  color: #ffffff; /* Change the text color */
-  border: none;
-  border-radius: 5px; /* Adjust the border radius for rounded corners */
-  cursor: pointer;
-  text-align: center;
-  text-decoration: none;
-  transition: background-color 0.3s ease; /* Add a smooth transition effect */
-  line-height: 1; /* Adjust the line height for vertical centering */
-  vertical-align: middle; /* Center the content vertically */
-  width: 30%; /* Adjust the percentage as needed */
-  height: 8%;
-  margin-right: 10px;
-  font-size: 1.5vmin; /* Adjust the vmin value as needed */
-        margin: 0 2%; /* Adjust the percentage as needed */
-}
-}
-
-.table-container {
-      overflow: auto;
-      height: 400px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      justify-content: center; /* Center horizontally */
-  align-items: center; /* Center vertically */
-      padding: 8px;
-      vertical-align: middle;
-      text-align: center;
-      font-size: 16px; /* Adjust the font size */
-      height: 30px; /* Set the height of the table cells */
-      width: auto;
-    }
-
-    .topcontainer {
-      display: flex;
-        
-      height: 100%;
-    }
-
-    .box {
-      width: 40%;
-      border: 1px solid #ccc;
-      padding: 20px;
-      margin: 0 auto;
-    background-color: #fff;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    border-radius: 5px;
-    }
-
-    p{
-        font-size: 1.5vmin;
-        justify-content: center; /* Center horizontally */
-  align-items: center; /* Center vertically */
-    }
-
-    h1{
-        font-size: 24px;
-    }
-
-    /* Define a button class */
-.but {
-    flex: 1;
-    display: inline-block;
-    align-items: center;
-    justify-content: center;
-  background-color: #3498db; /* Change the background color */
-  color: #ffffff; /* Change the text color */
-  border: none;
-  border-radius: 5px; /* Adjust the border radius for rounded corners */
-  cursor: pointer;
-  text-align: center;
-  text-decoration: none;
-  transition: background-color 0.3s ease; /* Add a smooth transition effect */
-  line-height: 1; /* Adjust the line height for vertical centering */
-  vertical-align: middle; /* Center the content vertically */
-  width: 17%; /* Adjust the percentage as needed */
-  margin-right: 10px;
-  font-size: 1.5vmin; /* Adjust the vmin value as needed */
-}
-
-/* Hover effect */
-.but:hover {
-  background-color: #2980b9; /* Change the background color on hover */
-}
-
-.button-container {
-  display: flex;
-  justify-content: center; /* Center horizontally */
-  align-items: center; /* Center vertically */
-  height: 100%; /* Match the height of the <td> */
-}
-
-.buttons{
-    flex: 10;
-    justify-content: center; /* Center horizontally */
-  align-items: center; /* Center vertically */
-    display: flex;
-    text-align: center;
-}
-    </style>
+    <link rel="stylesheet" href="eter.css">
 </head>
 <body>
-    <header>
+    <header class="site-header">
+        <div class="brand">Eter</div>
         <nav>
             <ul>
                 <li><a href="Interpreter.html">Dokumentacija</a></li>
@@ -279,52 +21,47 @@ header nav ul li a:hover {
             </ul>
         </nav>
     </header>
-    <br>
-    <div class="topcontainer">
-        <div id="container">
-            <h1>Interpreter za parcijalno rekurzivne funkcije</h1>
-            <textarea id="test-input" placeholder="Unesite kod ovdje..."></textarea>
-            <div class="buttons">
-                <button class="but" py-click="obrisi()" id="obrisi" style="margin-left: 15px;">Obriši kod</button>
-                <button class="but" id="insert-text-button1">Jednostavni program</button>
-                <button class="but" id="insert-text-button2">Složeni program</button>
-                <button id="submit-button" class="but" py-click="start()" style="margin-left: 40px; background-color: rgb(26, 26, 195);">
-                    Interpretiraj!
-                </button>
-                <div style="padding: 10px 10px; text-align: center;">
-                    <p>a nakon toga možeš i</p>
+    <main class="page">
+        <h1 class="page-title">Interpreter za parcijalno rekurzivne funkcije</h1>
+        <div class="topcontainer">
+            <section id="container" class="card">
+                <label class="label" for="test-input">Kod</label>
+                <textarea id="test-input" placeholder="Unesite kod ovdje..." spellcheck="false"></textarea>
+                <div class="buttons">
+                    <button class="but" py-click="obrisi()" id="obrisi">Obriši kod</button>
+                    <button class="but" id="insert-text-button1">Jednostavni program</button>
+                    <button class="but" id="insert-text-button2">Složeni program</button>
+                    <span class="spacer"></span>
+                    <button id="submit-button" class="but but-primary" py-click="start()">
+                        Interpretiraj!
+                    </button>
+                    <span class="run-group">
+                        <span class="hint">a nakon toga možeš i</span>
+                        <button class="but but-accent" onclick=stablo()>Prikazati stablo!</button>
+                    </span>
                 </div>
-                <button class="but" onclick=stablo() style="margin-right: 8%;">Prikazati stablo!</button>
-            </div>
-            <textarea id="test-output" disabled></textarea>
+                <label class="label" for="test-output">Rezultat</label>
+                <textarea id="test-output" disabled></textarea>
+            </section>
+            <aside class="box card">
+                <h2>Definirane funkcije</h2>
+                <div class="table-container">
+                    <table id="funkcijeTable">
+                        <tr>
+                            <th>Funkcije</th>
+                            <th>Argumenti</th>
+                            <th>Izraz</th>
+                            <th>Brisanje</th>
+                        </tr>
+                    </table>
+                </div>
+                <div class="table-actions">
+                    <button class="but but-danger" py-click="reset_funkcije()">Obriši sve funkcije!</button>
+                </div>
+            </aside>
         </div>
-        <div class="box">
-            <!--<div class="header-container">
-                <table>
-                    <tr>
-                        <th>Funkcije</th>
-                        <th>Mjesnost</th>
-                        <th>Brisanje</th>
-                    </tr>
-                </table>
-            </div>-->
-            <div class="table-container">
-                <table id="funkcijeTable">
-                    <tr>
-                        <th>Funkcije</th>
-                        <th>Argumenti</th>
-                        <th>Izraz</th>
-                        <th>Brisanje</th>
-                    </tr>
-                </table>
-            </div>
-            <br>
-            <button class="but" py-click="reset_funkcije()">Obriši sve funkcije!</button>
-        </div>
-    </div>
-    <div id="tree-container">
-
-    </div>
+        <div id="tree-container"></div>
+    </main>
     <py-config>
         plugins = [
           "https://pyscript.net/latest/plugins/python/py_tutor.py"
